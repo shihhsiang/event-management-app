@@ -302,11 +302,26 @@
         let customersData = []; // 儲存客戶資料
         let registrationSourcesData = []; // 儲存報名來源選項
 
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyCObFRNQxxXzcG5XSsCHWM-RbSLFOAACYo",
+          authDomain: "tphe-event-management.firebaseapp.com",
+          projectId: "tphe-event-management",
+          storageBucket: "tphe-event-management.firebasestorage.app",
+          messagingSenderId: "206814611445",
+          appId: "1:206814611445:web:b2ff762359fd46816282bc",
+          measurementId: "G-NHMWBP76TP"
+        };
+        
+        
+        const appId = firebaseConfig.projectId || 'default-app-id';
         
         async function main() {
             try {
-                const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+                // const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+                if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "YOUR_API_KEY") {
+                    throw new Error("Firebase 設定不正確，請依照註解指示貼上您的設定。");
+                }
                 const app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
@@ -322,11 +337,8 @@
                 });
 
                 // --- 登入邏輯 ---
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
+                // 在公開網站上，我們將直接使用匿名登入
+                await signInAnonymously(auth);
 
             } catch (e) {
                 console.error("Firebase 初始化或登入失敗:", e);
