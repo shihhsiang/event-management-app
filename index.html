@@ -1,1121 +1,1219 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>訂單與活動管理系統</title>
-<!-- 引入 Tailwind CSS 以進行快速 UI 開發 -->
-<script src="https://cdn.tailwindcss.com"></script>
-<!-- 引入 FullCalendar 的主要核心庫 -->
-<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
-<!-- 引入 DayGrid Plugin (用於月、週、日視圖) -->
-<script src='https://cdn.jsdelivr.net/npm/@fullcalendar/daygrid@6.1.11/index.global.min.js'></script>
-<!-- 引入 Interaction Plugin (用於點擊、拖曳等互動) -->
-<script src='https://cdn.jsdelivr.net/npm/@fullcalendar/interaction@6.1.11/index.global.min.js'></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>訂單與活動管理系統</title>
+    <!-- 引入 Tailwind CSS 以進行快速 UI 開發 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 FullCalendar 的主要核心庫 -->
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
+    <!-- 引入 DayGrid Plugin (用於月、週、日視圖) -->
+    <script src='https://cdn.jsdelivr.net/npm/@fullcalendar/daygrid@6.1.11/index.global.min.js'></script>
+    <!-- 引入 Interaction Plugin (用於點擊、拖曳等互動) -->
+    <script src='https://cdn.jsdelivr.net/npm/@fullcalendar/interaction@6.1.11/index.global.min.js'></script>
 
-<style>
-/* 自訂樣式，讓月曆在行動裝置上有更好的顯示效果 */
-:root {
---fc-button-bg-color: #3b82f6; /* 藍色按鈕 */
---fc-button-border-color: #3b82f6;
---fc-button-hover-bg-color: #2563eb;
---fc-button-hover-border-color: #2563eb;
---fc-today-bg-color: rgba(253, 224, 71, 0.2); /* 淡黃色標示今天 */
-}
-.fc .fc-toolbar-title {
-font-size: 1.25rem;
-}
-.fc .fc-daygrid-day-number {
-font-size: 0.9rem;
-padding: 4px;
-}
-.fc-event {
-cursor: pointer;
-transition: background-color: 0.2s;
-}
-.fc-event:hover {
-background-color: #1d4ed8;
-}
-/* 隱藏元素用的 class */
-.hidden {
-display: none;
-}
-/* Modal 彈出視窗樣式 */
-.modal-backdrop {
-position: fixed;
-top: 0;
-left: 0;
-width: 100%;
-height: 100%;
-background-color: rgba(0, 0, 0, 0.6);
-z-index: 40;
-display: flex;
-align-items: center;
-justify-content: center;
-}
-.modal-content {
-position: relative;
-top: auto;
-left: auto;
-transform: none;
-z-index: 50;
-}
-</style>
+    <style>
+        /* 自訂樣式，讓月曆在行動裝置上有更好的顯示效果 */
+        :root {
+            --fc-button-bg-color: #3b82f6; /* 藍色按鈕 */
+            --fc-button-border-color: #3b82f6;
+            --fc-button-hover-bg-color: #2563eb;
+            --fc-button-hover-border-color: #2563eb;
+            --fc-today-bg-color: rgba(253, 224, 71, 0.2); /* 淡黃色標示今天 */
+        }
+        .fc .fc-toolbar-title {
+            font-size: 1.25rem;
+        }
+        .fc .fc-daygrid-day-number {
+            font-size: 0.9rem;
+            padding: 4px;
+        }
+        .fc-event {
+            cursor: pointer;
+            transition: background-color: 0.2s;
+        }
+        .fc-event:hover {
+            background-color: #1d4ed8;
+        }
+        /* 隱藏元素用的 class */
+        .hidden {
+            display: none;
+        }
+        /* Modal 彈出視窗樣式 */
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            z-index: 40;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            position: relative;
+            top: auto;
+            left: auto;
+            transform: none;
+            z-index: 50;
+        }
+    </style>
 </head>
 <body class="bg-gray-100 font-sans antialiased">
 
-<div id="app" class="container mx-auto p-4 md:p-6">
-<header class="mb-6">
-<h1 class="text-3xl font-bold text-gray-800">訂單與活動管理系統</h1>
-<p class="text-gray-600">輕鬆管理您的活動與報名資料。</p>
-</header>
+    <div id="app" class="container mx-auto p-4 md:p-6">
+        <header class="mb-6">
+            <h1 class="text-3xl font-bold text-gray-800">訂單與活動管理系統</h1>
+            <p class="text-gray-600">輕鬆管理您的活動與報名資料。</p>
+        </header>
 
-<!-- 頁面切換按鈕 -->
-<nav class="flex space-x-2 mb-6 bg-white p-2 rounded-lg shadow-sm">
-<button id="show-calendar-btn" class="px-4 py-2 text-sm font-semibold text-white bg-blue-500 rounded-md shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors">
-月曆檢視
-</button>
-<button id="show-order-btn" class="px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 transition-colors">
-訂單匯入
-</button>
-<button id="show-customer-btn" class="px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 transition-colors">
-客戶名單
-</button>
-</nav>
+        <!-- 頁面切換按鈕 -->
+        <nav class="flex space-x-2 mb-6 bg-white p-2 rounded-lg shadow-sm">
+            <button id="show-calendar-btn" class="px-4 py-2 text-sm font-semibold text-white bg-blue-500 rounded-md shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors">
+                月曆檢視
+            </button>
+            <button id="show-order-btn" class="px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 transition-colors">
+                訂單匯入
+            </button>
+            <button id="show-customer-btn" class="px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 transition-colors">
+                客戶名單
+            </button>
+        </nav>
 
-<!-- 月曆視圖 -->
-<main id="calendar-view" class="bg-white p-4 rounded-lg shadow">
-<div class="flex justify-end space-x-2 mb-4">
-<button id="export-month-btn" class="px-4 py-2 text-xs font-semibold text-gray-700 bg-green-100 rounded-md hover:bg-green-200 border border-green-200">匯出本月報名</button>
-</div>
-<div id='calendar'></div>
-</main>
+        <!-- 月曆視圖 -->
+        <main id="calendar-view" class="bg-white p-4 rounded-lg shadow">
+            <div class="flex justify-end space-x-2 mb-4">
+                <button id="export-month-btn" class="px-4 py-2 text-xs font-semibold text-gray-700 bg-green-100 rounded-md hover:bg-green-200 border border-green-200">匯出本月報名</button>
+            </div>
+            <div id='calendar'></div>
+        </main>
 
-<!-- 訂單匯入視圖 -->
-<main id="order-view" class="hidden bg-white p-6 rounded-lg shadow">
-<h2 class="text-2xl font-bold text-gray-800 mb-4">新增報名訂單</h2>
-<form id="order-form" class="space-y-4">
-<div>
-<label for="event-select" class="block text-sm font-medium text-gray-700">選擇活動</label>
-<select id="event-select" name="eventId" required class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
-<option value="">請先選擇一個活動</option>
-</select>
-</div>
-<div>
-<label for="customer-name" class="block text-sm font-medium text-gray-700">報名者姓名 (可搜尋舊客)</label>
-<div class="relative">
-<input type="text" id="customer-name" name="customerName" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500" autocomplete="off">
-<div id="customer-suggestions" class="hidden absolute z-10 w-full bg-white border border-gray-300 rounded-md mt-1 shadow-lg max-h-60 overflow-y-auto">
-<!-- 搜尋建議會動態插入這裡 -->
-</div>
-</div>
-</div>
-<div>
-<label for="customer-phone" class="block text-sm font-medium text-gray-700">聯絡電話 (用以建立客戶資料)</label>
-<input type="tel" id="customer-phone" name="customerPhone" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-</div>
-<div>
-<label for="customer-email" class="block text-sm font-medium text-gray-700">電子郵件 (選填)</label>
-<input type="email" id="customer-email" name="customerEmail" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-</div>
-<div>
-<label for="customer-id" class="block text-sm font-medium text-gray-700">身分證字號 (選填)</label>
-<input type="text" id="customer-id" name="customerIdNumber" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-</div>
-<div>
-<label for="customer-dob" class="block text-sm font-medium text-gray-700">出生年月日 (選填)</label>
-<input type="date" id="customer-dob" name="customerDob" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-</div>
-<div>
-<label for="customer-occupation" class="block text-sm font-medium text-gray-700">職業 (選填)</label>
-<input type="text" id="customer-occupation" name="customerOccupation" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-</div>
-<div class="flex items-start">
-<div class="flex items-center h-5">
-<input id="addon-transport" name="addonTransport" type="checkbox" class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded">
-</div>
-<div class="ml-3 text-sm">
-<label for="addon-transport" class="font-medium text-gray-700">加購項目：交通接送</label>
-</div>
-</div>
+        <!-- 訂單匯入視圖 -->
+        <main id="order-view" class="hidden bg-white p-6 rounded-lg shadow">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">新增報名訂單</h2>
+            <form id="order-form" class="space-y-4">
+                <div>
+                    <label for="event-select" class="block text-sm font-medium text-gray-700">選擇活動</label>
+                    <select id="event-select" name="eventId" required class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                        <option value="">請先選擇一個活動</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="customer-name" class="block text-sm font-medium text-gray-700">報名者姓名 (可搜尋舊客)</label>
+                    <div class="relative">
+                        <input type="text" id="customer-name" name="customerName" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500" autocomplete="off">
+                        <div id="customer-suggestions" class="hidden absolute z-10 w-full bg-white border border-gray-300 rounded-md mt-1 shadow-lg max-h-60 overflow-y-auto">
+                            <!-- 搜尋建議會動態插入這裡 -->
+                        </div>
+                    </div>
+                </div>
+                 <div>
+                    <label for="customer-phone" class="block text-sm font-medium text-gray-700">聯絡電話 (用以建立客戶資料)</label>
+                    <input type="tel" id="customer-phone" name="customerPhone" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="customer-email" class="block text-sm font-medium text-gray-700">電子郵件 (選填)</label>
+                    <input type="email" id="customer-email" name="customerEmail" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="customer-id" class="block text-sm font-medium text-gray-700">身分證字號 (選填)</label>
+                    <input type="text" id="customer-id" name="customerIdNumber" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="customer-dob" class="block text-sm font-medium text-gray-700">出生年月日 (選填)</label>
+                    <input type="date" id="customer-dob" name="customerDob" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="customer-occupation" class="block text-sm font-medium text-gray-700">職業 (選填)</label>
+                    <input type="text" id="customer-occupation" name="customerOccupation" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="flex items-start">
+                    <div class="flex items-center h-5">
+                        <input id="addon-transport" name="addonTransport" type="checkbox" class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded">
+                    </div>
+                    <div class="ml-3 text-sm">
+                        <label for="addon-transport" class="font-medium text-gray-700">加購項目：交通接送</label>
+                    </div>
+                </div>
+                
+                <!-- 報名來源 -->
+                <div class="space-y-2 border-t pt-4">
+                    <div class="flex justify-between items-center">
+                        <label class="block text-sm font-medium text-gray-700">報名來源 (可複選)</label>
+                        <button type="button" id="manage-sources-btn" class="text-xs text-blue-600 hover:underline">管理來源選項</button>
+                    </div>
+                    <div id="registration-source-container" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        <!-- 動態載入的來源選項會出現在這裡 -->
+                    </div>
+                </div>
 
-<!-- 報名來源 -->
-<div class="space-y-2 border-t pt-4">
-<div class="flex justify-between items-center">
-<label class="block text-sm font-medium text-gray-700">報名來源 (可複選)</label>
-<button type="button" id="manage-sources-btn" class="text-xs text-blue-600 hover:underline">管理來源選項</button>
-</div>
-<div id="registration-source-container" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-<!-- 動態載入的來源選項會出現在這裡 -->
-</div>
-</div>
+                <!-- 自訂欄位容器 -->
+                <div id="custom-fields-container" class="space-y-4 border-t pt-4">
+                    <!-- 動態新增的自訂欄位會出現在這裡 -->
+                </div>
 
-<!-- 自訂欄位容器 -->
-<div id="custom-fields-container" class="space-y-4 border-t pt-4">
-<!-- 動態新增的自訂欄位會出現在這裡 -->
-</div>
+                <!-- 功能按鈕 -->
+                <div class="pt-2 space-y-3">
+                    <button type="button" id="add-custom-field-btn" class="w-full flex justify-center py-2 px-4 border border-dashed border-gray-400 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        ＋ 新增自訂欄位
+                    </button>
+                    <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        新增訂單
+                    </button>
+                </div>
+            </form>
+        </main>
+        
+        <!-- 客戶名單視圖 -->
+        <main id="customer-view" class="hidden bg-white p-6 rounded-lg shadow">
+             <h2 class="text-2xl font-bold text-gray-800 mb-4">客戶名單</h2>
+             <div class="mb-4">
+                <input type="text" id="customer-search-input" placeholder="依姓名或電話搜尋客戶..." class="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+             </div>
+             <div id="customer-list-container" class="max-h-[70vh] overflow-y-auto">
+                <!-- 客戶列表會動態插入這裡 -->
+             </div>
+        </main>
+    </div>
 
-<!-- 功能按鈕 -->
-<div class="pt-2 space-y-3">
-<button type="button" id="add-custom-field-btn" class="w-full flex justify-center py-2 px-4 border border-dashed border-gray-400 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-＋ 新增自訂欄位
-</button>
-<button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-新增訂單
-</button>
-</div>
-</form>
-</main>
+    <!-- 新增活動 Modal -->
+    <div id="add-event-modal" class="hidden modal-backdrop">
+        <div class="modal-content bg-white w-11/12 md:max-w-md mx-auto rounded-lg shadow-xl p-6">
+            <h3 class="text-xl font-bold mb-4">新增活動</h3>
+            <form id="add-event-form">
+                <div>
+                    <label for="event-title" class="block text-sm font-medium text-gray-700">活動標題</label>
+                    <input type="text" id="event-title" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    <input type="hidden" id="event-date">
+                </div>
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button type="button" id="cancel-add-event" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300">取消</button>
+                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">儲存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- 查看報名者 Modal -->
+    <div id="view-registrations-modal" class="hidden modal-backdrop">
+        <div class="modal-content bg-white w-11/12 md:max-w-lg mx-auto rounded-lg shadow-xl p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="registrations-title" class="text-xl font-bold">報名列表</h3>
+                <div class="flex items-center space-x-2">
+                     <button id="export-event-btn" class="px-3 py-1 text-xs font-semibold text-white bg-green-600 rounded-md hover:bg-green-700">匯出此活動</button>
+                     <button id="export-day-from-modal-btn" class="px-3 py-1 text-xs font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700">匯出本日報名</button>
+                    <button id="close-registrations-modal" class="ml-2 text-gray-500 hover:text-gray-800 text-2xl leading-none">&times;</button>
+                </div>
+            </div>
+            <div id="registrations-list" class="max-h-[60vh] overflow-y-auto">
+                <!-- 報名者資料會動態插入這裡 -->
+            </div>
+        </div>
+    </div>
 
-<!-- 客戶名單視圖 -->
-<main id="customer-view" class="hidden bg-white p-6 rounded-lg shadow">
-<h2 class="text-2xl font-bold text-gray-800 mb-4">客戶名單</h2>
-<div class="mb-4">
-<input type="text" id="customer-search-input" placeholder="依姓名或電話搜尋客戶..." class="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-</div>
-<div id="customer-list-container" class="max-h-[70vh] overflow-y-auto">
-<!-- 客戶列表會動態插入這裡 -->
-</div>
-</main>
-</div>
-
-<!-- 新增活動 Modal -->
-<div id="add-event-modal" class="hidden modal-backdrop">
-<div class="modal-content bg-white w-11/12 md:max-w-md mx-auto rounded-lg shadow-xl p-6">
-<h3 class="text-xl font-bold mb-4">新增活動</h3>
-<form id="add-event-form">
-<div>
-<label for="event-title" class="block text-sm font-medium text-gray-700">活動標題</label>
-<input type="text" id="event-title" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-<input type="hidden" id="event-date">
-</div>
-<div class="mt-6 flex justify-end space-x-3">
-<button type="button" id="cancel-add-event" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300">取消</button>
-<button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">儲存</button>
-</div>
-</form>
-</div>
-</div>
-
-<!-- 查看報名者 Modal -->
-<div id="view-registrations-modal" class="hidden modal-backdrop">
-<div class="modal-content bg-white w-11/12 md:max-w-lg mx-auto rounded-lg shadow-xl p-6">
-<div class="flex justify-between items-center mb-4">
-<h3 id="registrations-title" class="text-xl font-bold">報名列表</h3>
-<div class="flex items-center space-x-2">
-<button id="export-event-btn" class="px-3 py-1 text-xs font-semibold text-white bg-green-600 rounded-md hover:bg-green-700">匯出此活動</button>
-<button id="export-day-from-modal-btn" class="px-3 py-1 text-xs font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700">匯出本日報名</button>
-<button id="close-registrations-modal" class="ml-2 text-gray-500 hover:text-gray-800 text-2xl leading-none">&times;</button>
-</div>
-</div>
-<div id="registrations-list" class="max-h-[60vh] overflow-y-auto">
-<!-- 報名者資料會動態插入這裡 -->
-</div>
-</div>
-</div>
-
-<!-- 客戶詳細資料 Modal -->
-<div id="customer-details-modal" class="hidden modal-backdrop">
-<div class="modal-content bg-white w-11/12 md:max-w-2xl mx-auto rounded-lg shadow-xl p-6">
-<div class="flex justify-between items-center mb-4 border-b pb-3">
-<h3 id="customer-details-title" class="text-2xl font-bold">客戶詳細資料</h3>
-<button id="close-customer-details-modal" class="text-gray-500 hover:text-gray-800 text-3xl leading-none">&times;</button>
-</div>
-<div id="customer-details-content" class="max-h-[70vh] overflow-y-auto">
-<!-- 客戶資料會動態插入這裡 -->
-</div>
-</div>
-</div>
-
-<!-- 管理報名來源 Modal -->
-<div id="manage-sources-modal" class="hidden modal-backdrop">
-<div class="modal-content bg-white w-11/12 md:max-w-md mx-auto rounded-lg shadow-xl p-6">
-<div class="flex justify-between items-center mb-4">
-<h3 class="text-xl font-bold">管理報名來源</h3>
-<button id="close-sources-modal" class="text-gray-500 hover:text-gray-800 text-2xl leading-none">&times;</button>
-</div>
-<div id="source-management-list" class="space-y-2 mb-4 max-h-60 overflow-y-auto">
-<!-- 來源列表 -->
-</div>
-<form id="add-source-form" class="flex space-x-2">
-<input type="text" id="new-source-name" placeholder="新增來源名稱..." class="flex-grow border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-<button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">新增</button>
-</form>
-</div>
-</div>
+    <!-- 客戶詳細資料 Modal -->
+    <div id="customer-details-modal" class="hidden modal-backdrop">
+        <div class="modal-content bg-white w-11/12 md:max-w-2xl mx-auto rounded-lg shadow-xl p-6">
+            <div class="flex justify-between items-center mb-4 border-b pb-3">
+                <h3 id="customer-details-title" class="text-2xl font-bold">客戶詳細資料</h3>
+                <button id="close-customer-details-modal" class="text-gray-500 hover:text-gray-800 text-3xl leading-none">&times;</button>
+            </div>
+            <div id="customer-details-content" class="max-h-[70vh] overflow-y-auto">
+                <!-- 客戶資料會動態插入這裡 -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- 管理報名來源 Modal -->
+    <div id="manage-sources-modal" class="hidden modal-backdrop">
+        <div class="modal-content bg-white w-11/12 md:max-w-md mx-auto rounded-lg shadow-xl p-6">
+             <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">管理報名來源</h3>
+                <button id="close-sources-modal" class="text-gray-500 hover:text-gray-800 text-2xl leading-none">&times;</button>
+            </div>
+            <div id="source-management-list" class="space-y-2 mb-4 max-h-60 overflow-y-auto">
+                <!-- 來源列表 -->
+            </div>
+            <form id="add-source-form" class="flex space-x-2">
+                <input type="text" id="new-source-name" placeholder="新增來源名稱..." class="flex-grow border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">新增</button>
+            </form>
+        </div>
+    </div>
 
 
-<!-- Firebase SDKs -->
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, collection, onSnapshot, addDoc, query, where, getDocs, setLogLevel, doc, updateDoc, serverTimestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, addDoc, query, where, getDocs, setLogLevel, doc, updateDoc, serverTimestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-// --- DOM 元素 ---
-const appDiv = document.getElementById('app');
-const calendarView = document.getElementById('calendar-view');
-const orderView = document.getElementById('order-view');
-const customerView = document.getElementById('customer-view');
-const showCalendarBtn = document.getElementById('show-calendar-btn');
-const showOrderBtn = document.getElementById('show-order-btn');
-const showCustomerBtn = document.getElementById('show-customer-btn');
-const addEventModal = document.getElementById('add-event-modal');
-const addEventForm = document.getElementById('add-event-form');
-const cancelAddEventBtn = document.getElementById('cancel-add-event');
-const eventTitleInput = document.getElementById('event-title');
-const eventDateInput = document.getElementById('event-date');
-const orderForm = document.getElementById('order-form');
-const eventSelect = document.getElementById('event-select');
-const viewRegistrationsModal = document.getElementById('view-registrations-modal');
-const closeRegistrationsModalBtn = document.getElementById('close-registrations-modal');
-const registrationsListDiv = document.getElementById('registrations-list');
-const registrationsTitle = document.getElementById('registrations-title');
-const addCustomFieldBtn = document.getElementById('add-custom-field-btn');
-const customFieldsContainer = document.getElementById('custom-fields-container');
-const customerListContainer = document.getElementById('customer-list-container');
-const customerSearchInput = document.getElementById('customer-search-input');
-const customerDetailsModal = document.getElementById('customer-details-modal');
-const closeCustomerDetailsModalBtn = document.getElementById('close-customer-details-modal');
-const customerDetailsTitle = document.getElementById('customer-details-title');
-const customerDetailsContent = document.getElementById('customer-details-content');
-const customerNameInput = document.getElementById('customer-name');
-const customerSuggestionsContainer = document.getElementById('customer-suggestions');
-const exportMonthBtn = document.getElementById('export-month-btn');
-const exportEventBtn = document.getElementById('export-event-btn');
-const exportDayFromModalBtn = document.getElementById('export-day-from-modal-btn');
-const manageSourcesBtn = document.getElementById('manage-sources-btn');
-const manageSourcesModal = document.getElementById('manage-sources-modal');
-const closeSourcesModalBtn = document.getElementById('close-sources-modal');
-const addSourceForm = document.getElementById('add-source-form');
-const newSourceNameInput = document.getElementById('new-source-name');
-const sourceManagementList = document.getElementById('source-management-list');
-const registrationSourceContainer = document.getElementById('registration-source-container');
+        // --- DOM 元素 ---
+        const appDiv = document.getElementById('app');
+        const calendarView = document.getElementById('calendar-view');
+        const orderView = document.getElementById('order-view');
+        const customerView = document.getElementById('customer-view');
+        const showCalendarBtn = document.getElementById('show-calendar-btn');
+        const showOrderBtn = document.getElementById('show-order-btn');
+        const showCustomerBtn = document.getElementById('show-customer-btn');
+        const addEventModal = document.getElementById('add-event-modal');
+        const addEventForm = document.getElementById('add-event-form');
+        const cancelAddEventBtn = document.getElementById('cancel-add-event');
+        const eventTitleInput = document.getElementById('event-title');
+        const eventDateInput = document.getElementById('event-date');
+        const orderForm = document.getElementById('order-form');
+        const eventSelect = document.getElementById('event-select');
+        const viewRegistrationsModal = document.getElementById('view-registrations-modal');
+        const closeRegistrationsModalBtn = document.getElementById('close-registrations-modal');
+        const registrationsListDiv = document.getElementById('registrations-list');
+        const registrationsTitle = document.getElementById('registrations-title');
+        const addCustomFieldBtn = document.getElementById('add-custom-field-btn');
+        const customFieldsContainer = document.getElementById('custom-fields-container');
+        const customerListContainer = document.getElementById('customer-list-container');
+        const customerSearchInput = document.getElementById('customer-search-input');
+        const customerDetailsModal = document.getElementById('customer-details-modal');
+        const closeCustomerDetailsModalBtn = document.getElementById('close-customer-details-modal');
+        const customerDetailsTitle = document.getElementById('customer-details-title');
+        const customerDetailsContent = document.getElementById('customer-details-content');
+        const customerNameInput = document.getElementById('customer-name');
+        const customerSuggestionsContainer = document.getElementById('customer-suggestions');
+        const exportMonthBtn = document.getElementById('export-month-btn');
+        const exportEventBtn = document.getElementById('export-event-btn');
+        const exportDayFromModalBtn = document.getElementById('export-day-from-modal-btn');
+        const manageSourcesBtn = document.getElementById('manage-sources-btn');
+        const manageSourcesModal = document.getElementById('manage-sources-modal');
+        const closeSourcesModalBtn = document.getElementById('close-sources-modal');
+        const addSourceForm = document.getElementById('add-source-form');
+        const newSourceNameInput = document.getElementById('new-source-name');
+        const sourceManagementList = document.getElementById('source-management-list');
+        const registrationSourceContainer = document.getElementById('registration-source-container');
 
-// --- Firebase 設定 ---
-let db, auth;
-let eventsCollection, registrationsCollection, customersCollection, registrationSourcesCollection;
-let calendar; // FullCalendar 實例
-let isAppInitialized = false; // Flag to prevent multiple initializations
-let unsubscribeRegistrations = null; // 用於取消報名列表的即時監聽
-let eventsData = []; // 儲存活動資料
-let registrationsData = []; // 儲存報名資料
-let customersData = []; // 儲存客戶資料
-let registrationSourcesData = []; // 儲存報名來源選項
-
+        // --- Firebase 設定 ---
+        let db, auth;
+        let eventsCollection, registrationsCollection, customersCollection, registrationSourcesCollection;
+        let calendar; // FullCalendar 實例
+        let isAppInitialized = false; // Flag to prevent multiple initializations
+        let unsubscribeRegistrations = null; // 用於取消報名列表的即時監聽
+        let eventsData = []; // 儲存活動資料
+        let registrationsData = []; // 儲存報名資料
+        let customersData = []; // 儲存客戶資料
+        let registrationSourcesData = []; // 儲存報名來源選項
 
         const firebaseConfig = {
-          apiKey: "AIzaSyCObFRNQxxXzcG5XSsCHWM-RbSLFOAACYo",
-          authDomain: "tphe-event-management.firebaseapp.com",
-          projectId: "tphe-event-management",
-          storageBucket: "tphe-event-management.firebasestorage.app",
-          messagingSenderId: "206814611445",
-          appId: "1:206814611445:web:b2ff762359fd46816282bc",
-          measurementId: "G-NHMWBP76TP"
+            apiKey: "AIzaSyCObFRNQxxXzcG5XSsCHWM-RbSLFOAACYo",
+            authDomain: "tphe-event-management.firebaseapp.com",
+            projectId: "tphe-event-management",
+            storageBucket: "tphe-event-management.appspot.com",
+            messagingSenderId: "206814611445",
+            appId: "1:206814611445:web:b2ff762359fd46816282bc",
+            measurementId: "G-NHMWBP76TP"
         };
-    
-          const firebaseConfig = {
-              apiKey: "AIzaSyCObFRNQxxXzcG5XSsCHWM-RbSLFOAACYo",
-              authDomain: "tphe-event-management.firebaseapp.com",
-              projectId: "tphe-event-management",
-              storageBucket: "tphe-event-management.firebasestorage.app",
-              messagingSenderId: "206814611445",
-              appId: "1:206814611445:web:b2ff762359fd46816282bc",
-              measurementId: "G-NHMWBP76TP"
+        
+        const appId = firebaseConfig.projectId || 'default-app-id';
+        
+        async function main() {
+            try {
+                if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "YOUR_API_KEY") {
+                     throw new Error("Firebase 設定不正確，請依照註解指示貼上您的設定。");
+                }
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                setLogLevel('debug'); // 開發時使用，可看見詳細日誌
+
+                // --- 認證監聽 ---
+                onAuthStateChanged(auth, user => {
+                    if (user && !isAppInitialized) {
+                        isAppInitialized = true; // Set flag
+                        console.log("使用者已認證:", user.uid);
+                        initializeAppData(user.uid);
+                    }
+                });
+
+                // --- 登入邏輯 ---
+                // 在公開網站上，我們將直接使用匿名登入
+                await signInAnonymously(auth);
+
+            } catch (e) {
+                console.error("Firebase 初始化或登入失敗:", e);
+                 if (appDiv) {
+                     if (e.message.includes("Firebase 設定不正確")) {
+                         appDiv.innerHTML = `<div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-6 rounded-lg my-4" role="alert">
+                            <h3 class="font-bold text-xl mb-2">下一步：請設定您的 Firebase 金鑰</h3>
+                            <p class="mb-3">應用程式還無法連接到雲端資料庫，請完成最後一個設定步驟。</p>
+                            <ol class="list-decimal list-inside space-y-1">
+                                <li>前往您的 <a href="https://console.firebase.google.com/" target="_blank" class="font-semibold underline hover:text-yellow-900">Firebase 專案主控台</a>。</li>
+                                <li>點擊左上角的⚙️圖示，選擇「專案設定」。</li>
+                                <li>在「您的應用程式」區塊，複製 <code>firebaseConfig</code> 設定物件。</li>
+                                <li>回到本頁面程式碼，找到 <code>firebaseConfig</code> 常數。</li>
+                                <li>將複製的內容**完整取代**預留位置的程式碼。</li>
+                            </ol>
+                            <p class="mt-4">完成後儲存並重新整理頁面，您的應用程式就能正常運作了！</p>
+                        </div>`;
+                    } else {
+                        appDiv.innerHTML = `<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                            <strong class="font-bold">錯誤!</strong>
+                            <span class="block sm:inline">應用程式初始化失敗，請檢查主控台錯誤訊息。 (${e.message})</span>
+                        </div>`;
+                    }
+                }
+            }
+        }
+
+        main();
+
+        function initializeAppData(userId) {
+            // 定義 Firestore collection 路徑 - 簡化路徑以匹配預設安全規則
+            eventsCollection = collection(db, "events");
+            registrationsCollection = collection(db, "registrations");
+            customersCollection = collection(db, "customers");
+            registrationSourcesCollection = collection(db, "registrationSources");
+
+            initializeCalendar();
+            setupEventListeners();
+            listenToData();
+            checkAndSeedInitialSources(); // 檢查並植入初始來源資料
+        }
+
+        // --- 月曆初始化 ---
+        function initializeCalendar() {
+            const calendarEl = document.getElementById('calendar');
+            calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                locale: 'zh-tw', // 設定為繁體中文
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,dayGridWeek'
+                },
+                buttonText: {
+                    today: '今天',
+                    month: '月',
+                    week: '週',
+                    day: '日'
+                },
+                dateClick: function(info) {
+                    eventDateInput.value = info.dateStr;
+                    addEventModal.classList.remove('hidden');
+                },
+                eventClick: function(info) {
+                    const eventId = info.event.id;
+                    const eventDate = info.event.startStr;
+                    const originalTitle = eventsData.find(e => e.id === eventId)?.title || '';
+                    // 將 eventId 和 date 附加到匯出按鈕上
+                    exportEventBtn.dataset.eventId = eventId;
+                    exportDayFromModalBtn.dataset.eventDate = eventDate;
+                    showRegistrations(eventId, originalTitle);
+                }
+            });
+            calendar.render();
+        }
+
+        // --- Firestore 資料監聽 ---
+        function listenToData() {
+            onSnapshot(eventsCollection, (snapshot) => {
+                eventsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                updateCalendarDisplay();
+                updateOrderFormDropdown();
+            });
+
+            onSnapshot(registrationsCollection, (snapshot) => {
+                registrationsData = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+                updateCalendarDisplay();
+            });
+
+            onSnapshot(customersCollection, (snapshot) => {
+                customersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderCustomerList();
+            });
+            
+            onSnapshot(query(registrationSourcesCollection), (snapshot) => {
+                registrationSourcesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderRegistrationSources();
+            });
+        }
+        
+        // --- 初始資料設定 ---
+        async function checkAndSeedInitialSources() {
+            const snapshot = await getDocs(registrationSourcesCollection);
+            if (snapshot.empty) {
+                console.log("正在植入初始報名來源...");
+                const defaultSources = ['Line', 'FB', 'Accupass'];
+                for (const sourceName of defaultSources) {
+                    await addDoc(registrationSourcesCollection, { name: sourceName, createdAt: serverTimestamp() });
+                }
+            }
+        }
+
+        // --- 畫面渲染 ---
+
+        function renderRegistrationSources() {
+            // 渲染訂單匯入頁的勾選框
+            registrationSourceContainer.innerHTML = registrationSourcesData.map(source => `
+                <div class="flex items-center">
+                    <input id="source-${source.id}" name="sources" value="${source.name}" type="checkbox" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <label for="source-${source.id}" class="ml-2 block text-sm text-gray-900">${source.name}</label>
+                </div>
+            `).join('');
+
+            // 渲染管理視窗的列表
+            sourceManagementList.innerHTML = registrationSourcesData.map(source => `
+                <div class="flex items-center justify-between p-2 bg-gray-100 rounded-md">
+                    <span class="source-name" data-id="${source.id}">${source.name}</span>
+                    <div class="space-x-2">
+                        <button class="edit-source-btn text-xs text-blue-500 hover:underline" data-id="${source.id}" data-name="${source.name}">編輯</button>
+                        <button class="delete-source-btn text-xs text-red-500 hover:underline" data-id="${source.id}">刪除</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderCustomerList() {
+            const searchTerm = customerSearchInput.value.toLowerCase();
+            const filteredCustomers = customersData.filter(c => {
+                const nameMatch = c.customerName && c.customerName.toLowerCase().includes(searchTerm);
+                const phoneMatch = c.primaryPhone && c.primaryPhone.toLowerCase().includes(searchTerm);
+                return nameMatch || phoneMatch;
+            });
+
+            if(filteredCustomers.length === 0) {
+                customerListContainer.innerHTML = '<p class="text-center text-gray-500 py-4">找不到客戶或尚無客戶資料。</p>';
+                return;
+            }
+            
+            customerListContainer.innerHTML = `
+                <ul class="divide-y divide-gray-200">
+                    ${filteredCustomers.map(c => `
+                        <li class="p-4 hover:bg-gray-50 cursor-pointer" data-customer-id="${c.id}">
+                            <div class="flex justify-between">
+                                <p class="font-semibold text-gray-800">${c.customerName || '未命名'}</p>
+                                <p class="text-sm text-gray-600">${c.primaryPhone || '無電話'}</p>
+                            </div>
+                        </li>
+                    `).join('')}
+                </ul>
+            `;
+        }
+
+        function updateCalendarDisplay() {
+            if (!calendar) return;
+            const registrationCounts = registrationsData.reduce((acc, reg) => {
+                if (reg.eventId) {
+                    acc[reg.eventId] = (acc[reg.eventId] || 0) + 1;
+                }
+                return acc;
+            }, {});
+            const eventsWithCounts = eventsData.map(event => {
+                const count = registrationCounts[event.id] || 0;
+                return {
+                    id: event.id,
+                    title: `${event.title} (${count}人)`,
+                    start: event.date,
+                    allDay: true
+                };
+            });
+            calendar.removeAllEvents();
+            calendar.addEventSource(eventsWithCounts);
+        }
+
+        function updateOrderFormDropdown() {
+             const currentEventId = eventSelect.value;
+             eventSelect.innerHTML = '<option value="">請先選擇一個活動</option>';
+             let currentEventExists = false;
+             const sortedEvents = [...eventsData].sort((a, b) => new Date(a.date) - new Date(b.date));
+             sortedEvents.forEach(event => {
+                 const option = document.createElement('option');
+                 option.value = event.id;
+                 option.textContent = `${event.date} - ${event.title}`;
+                 if (event.id === currentEventId) {
+                     option.selected = true;
+                     currentEventExists = true;
+                 }
+                 eventSelect.appendChild(option);
+             });
+              if (currentEventId && currentEventExists) {
+                 eventSelect.value = currentEventId;
+             }
+        }
+        
+        // --- 事件處理 ---
+        async function showCustomerDetails(customerId) {
+            const customer = customersData.find(c => c.id === customerId);
+            if (!customer) return;
+
+            customerDetailsTitle.textContent = `${customer.customerName || '未命名'} 的詳細資料`;
+            
+            const customerRegistrations = registrationsData.filter(r => r.customerId === customerId);
+            
+            let eventHistoryHtml = '<p class="text-sm text-gray-500">尚無參加活動紀錄。</p>';
+            if (customerRegistrations.length > 0) {
+                eventHistoryHtml = `
+                    <ul class="divide-y divide-gray-200">${customerRegistrations.map(reg => {
+                        const event = eventsData.find(e => e.id === reg.eventId);
+                        return `
+                            <li class="py-2">
+                                <p class="font-medium">${event ? event.title : '未知活動'}</p>
+                                <p class="text-sm text-gray-500">日期: ${event ? event.date : 'N/A'}</p>
+                            </li>`;
+                    }).join('')}</ul>`;
+            }
+
+            customerDetailsContent.innerHTML = `
+                <div class="space-y-6">
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                             <h4 class="text-lg font-bold">基本資料</h4>
+                             <button id="edit-customer-btn" data-customer-id="${customerId}" class="text-sm text-blue-600 hover:underline px-3 py-1">編輯</button>
+                        </div>
+                        
+                        <!-- Display View -->
+                        <div id="customer-info-display" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <p><strong>姓名:</strong> <span data-field="customerName">${customer.customerName || 'N/A'}</span></p>
+                            <p><strong>電話:</strong> <span data-field="primaryPhone">${customer.primaryPhone || 'N/A'}</span></p>
+                            <p><strong>Email:</strong> <span data-field="customerEmail">${customer.customerEmail || 'N/A'}</span></p>
+                            <p><strong>身分證:</strong> <span data-field="customerIdNumber">${customer.customerIdNumber || 'N/A'}</span></p>
+                            <p><strong>生日:</strong> <span data-field="customerDob">${customer.customerDob || 'N/A'}</span></p>
+                            <p><strong>職業:</strong> <span data-field="customerOccupation">${customer.customerOccupation || 'N/A'}</span></p>
+                        </div>
+
+                        <!-- Edit Form View (hidden by default) -->
+                        <form id="customer-info-form" class="hidden space-y-3" data-customer-id="${customerId}">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <label class="block font-medium">姓名</label>
+                                    <input type="text" name="customerName" value="${customer.customerName || ''}" class="mt-1 p-2 w-full border border-gray-300 rounded-md">
+                                </div>
+                                <div>
+                                    <label class="block font-medium">電話</label>
+                                    <input type="tel" name="primaryPhone" value="${customer.primaryPhone || ''}" class="mt-1 p-2 w-full border border-gray-300 rounded-md">
+                                </div>
+                                <div>
+                                    <label class="block font-medium">Email</label>
+                                    <input type="email" name="customerEmail" value="${customer.customerEmail || ''}" class="mt-1 p-2 w-full border border-gray-300 rounded-md">
+                                </div>
+                                <div>
+                                    <label class="block font-medium">身分證</label>
+                                    <input type="text" name="customerIdNumber" value="${customer.customerIdNumber || ''}" class="mt-1 p-2 w-full border border-gray-300 rounded-md">
+                                </div>
+                                <div>
+                                    <label class="block font-medium">生日</label>
+                                    <input type="date" name="customerDob" value="${customer.customerDob || ''}" class="mt-1 p-2 w-full border border-gray-300 rounded-md">
+                                </div>
+                                <div>
+                                    <label class="block font-medium">職業</label>
+                                    <input type="text" name="customerOccupation" value="${customer.customerOccupation || ''}" class="mt-1 p-2 w-full border border-gray-300 rounded-md">
+                                </div>
+                            </div>
+                            <div class="flex justify-end space-x-2 pt-2">
+                                <button type="button" id="cancel-customer-edit-btn" class="bg-gray-200 text-gray-700 px-4 py-2 text-sm rounded-md hover:bg-gray-300">取消</button>
+                                <button type="submit" id="save-customer-edit-btn" class="bg-blue-600 text-white px-4 py-2 text-sm rounded-md hover:bg-blue-700">儲存變更</button>
+                            </div>
+                        </form>
+                    </div>
+                    <div>
+                        <h4 class="text-lg font-bold mb-2">備註</h4>
+                        <textarea id="customer-notes-textarea" class="w-full border border-gray-300 rounded-md shadow-sm p-2 text-sm" rows="4">${customer.notes || ''}</textarea>
+                        <button id="save-customer-notes-btn" data-customer-id="${customerId}" class="mt-2 bg-blue-500 text-white px-4 py-2 text-sm rounded-md hover:bg-blue-600">儲存備註</button>
+                    </div>
+                    <div>
+                        <h4 class="text-lg font-bold mb-2">參加過的活動</h4>
+                        ${eventHistoryHtml}
+                    </div>
+                </div>
+            `;
+
+            customerDetailsModal.classList.remove('hidden');
+        }
+
+        async function showRegistrations(eventId, eventTitle) {
+            registrationsTitle.textContent = `「${eventTitle}」的報名列表`;
+            registrationsListDiv.innerHTML = '<p class="text-center text-gray-500">讀取中...</p>';
+            viewRegistrationsModal.classList.remove('hidden');
+
+            if (unsubscribeRegistrations) unsubscribeRegistrations();
+
+            try {
+                const q = query(registrationsCollection, where("eventId", "==", eventId));
+                unsubscribeRegistrations = onSnapshot(q, (querySnapshot) => {
+                    if (querySnapshot.empty) {
+                        registrationsListDiv.innerHTML = '<p class="text-center text-gray-500">目前尚無報名資料。</p>';
+                        return;
+                    }
+                    let notCheckedInHtml = '<div><h4 class="text-md font-semibold text-gray-700 mb-2 border-b pb-2">未報到</h4><ul class="space-y-3">';
+                    let checkedInHtml = '<div class="mt-6"><h4 class="text-md font-semibold text-gray-700 mb-2 border-b pb-2">已報到</h4><ul class="space-y-3">';
+                    let notCheckedInCount = 0;
+                    let checkedInCount = 0;
+                    querySnapshot.forEach(doc => {
+                        const data = doc.data();
+                        let customFieldsHtml = '';
+                        if (data.customFields && typeof data.customFields === 'object') {
+                            for (const [key, value] of Object.entries(data.customFields)) {
+                                if (key && value) {
+                                     customFieldsHtml += `<p class="text-sm text-gray-500 col-span-1 sm:col-span-2 capitalize">${key}: <span class="font-medium text-gray-700">${value}</span></p>`;
+                                }
+                            }
+                        }
+                        
+                        let sourcesHtml = '';
+                        if (data.sources && Array.isArray(data.sources) && data.sources.length > 0) {
+                            sourcesHtml = `<div class="col-span-1 sm:col-span-2 flex flex-wrap gap-2 mt-2">
+                                ${data.sources.map(s => `<span class="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded-full">${s}</span>`).join('')}
+                            </div>`;
+                        }
+
+                        const itemHtml = `
+                            <li class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                <div class="flex items-start space-x-4">
+                                    <input type="checkbox" data-doc-id="${doc.id}" class="check-in-box h-6 w-6 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-1 flex-shrink-0" ${data.isCheckedIn ? 'checked' : ''}>
+                                    <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+                                        <div class="col-span-1 sm:col-span-2 mb-1">
+                                            <p class="text-lg font-bold text-gray-800">${data.customerName || '未命名'}</p>
+                                        </div>
+                                        <p class="text-sm text-gray-500">身分證: <span class="font-medium text-gray-700">${data.customerIdNumber || 'N/A'}</span></p>
+                                        <p class="text-sm text-gray-500">生日: <span class="font-medium text-gray-700">${data.customerDob || 'N/A'}</span></p>
+                                        <p class="text-sm text-gray-500">電話: <span class="font-medium text-gray-700">${data.customerPhone || 'N/A'}</span></p>
+                                        <p class="text-sm text-gray-500">職業: <span class="font-medium text-gray-700">${data.customerOccupation || 'N/A'}</span></p>
+                                        ${data.customerEmail ? `<p class="text-sm text-gray-500 col-span-1 sm:col-span-2">Email: <span class="font-medium text-gray-700">${data.customerEmail}</span></p>` : ''}
+                                        ${customFieldsHtml}
+                                        ${data.addonTransport ? `<div class="col-span-1 sm:col-span-2 mt-2 pt-2 border-t border-gray-200"><p class="text-sm text-green-600 font-semibold">✓ 已加購交通接送</p></div>` : ''}
+                                        ${sourcesHtml}
+                                    </div>
+                                </div>
+                            </li>`;
+                        if (data.isCheckedIn) {
+                            checkedInCount++;
+                            checkedInHtml += itemHtml;
+                        } else {
+                            notCheckedInCount++;
+                            notCheckedInHtml += itemHtml;
+                        }
+                    });
+                    notCheckedInHtml += '</ul></div>';
+                    checkedInHtml += '</ul></div>';
+                    if (notCheckedInCount === 0) notCheckedInHtml = '<div><h4 class="text-md font-semibold text-gray-700 mb-2 border-b pb-2">未報到</h4><p class="text-sm text-gray-500 mt-2">所有人都已報到！</p></div>';
+                    if (checkedInCount === 0) checkedInHtml = '<div class="mt-6"><h4 class="text-md font-semibold text-gray-700 mb-2 border-b pb-2">已報到</h4><p class="text-sm text-gray-500 mt-2">尚無人報到。</p></div>';
+                    registrationsListDiv.innerHTML = notCheckedInHtml + checkedInHtml;
+                });
+            } catch (error) {
+                console.error("讀取報名資料失敗:", error);
+                registrationsListDiv.innerHTML = '<p class="text-center text-red-500">讀取資料失敗。</p>';
+            }
+        }
+        
+        async function handleAddEvent(e) {
+            e.preventDefault();
+            const title = eventTitleInput.value.trim();
+            const date = eventDateInput.value;
+            if (title && date) {
+                try {
+                    await addDoc(eventsCollection, { title, date });
+                    addEventForm.reset();
+                    addEventModal.classList.add('hidden');
+                } catch (error) {
+                    console.error("新增活動失敗:", error);
+                }
+            }
+        }
+
+        async function handleAddOrder(e) {
+            e.preventDefault();
+            const formData = new FormData(orderForm);
+            const data = Object.fromEntries(formData.entries());
+
+            if (!data.eventId) { return; }
+            
+            let customerId;
+            const phone = data.customerPhone.trim();
+
+            if (phone) {
+                 const q = query(customersCollection, where("primaryPhone", "==", phone));
+                 const querySnapshot = await getDocs(q);
+                 if (querySnapshot.empty) {
+                     // 新客戶
+                     const newCustomerRef = await addDoc(customersCollection, {
+                         primaryPhone: phone,
+                         customerName: data.customerName || '',
+                         customerEmail: data.customerEmail || '',
+                         customerIdNumber: data.customerIdNumber || '',
+                         customerDob: data.customerDob || '',
+                         customerOccupation: data.customerOccupation || '',
+                         notes: '',
+                         createdAt: serverTimestamp(),
+                         lastUpdatedAt: serverTimestamp(),
+                     });
+                     customerId = newCustomerRef.id;
+                 } else {
+                     // 現有客戶
+                     const customerDoc = querySnapshot.docs[0];
+                     customerId = customerDoc.id;
+                     // 可選擇性更新客戶資料
+                     await updateDoc(doc(customersCollection, customerId), {
+                         customerName: data.customerName || customerDoc.data().customerName,
+                         customerEmail: data.customerEmail || customerDoc.data().customerEmail,
+                         lastUpdatedAt: serverTimestamp(),
+                     });
+                 }
+            }
+
+            const customFields = {};
+            customFieldsContainer.querySelectorAll('.custom-field-group').forEach(group => {
+                const key = group.querySelector('input[name="custom-key"]').value.trim();
+                const value = group.querySelector('input[name="custom-value"]').value.trim();
+                if (key && value) customFields[key] = value;
+            });
+            
+            // 處理報名來源
+            const sources = [];
+            orderForm.querySelectorAll('input[name="sources"]:checked').forEach(checkbox => {
+                sources.push(checkbox.value);
+            });
+
+            try {
+                await addDoc(registrationsCollection, {
+                    eventId: data.eventId,
+                    customerId: customerId || null, // 關聯客戶 ID
+                    customerName: data.customerName || '',
+                    customerPhone: data.customerPhone || '',
+                    customerEmail: data.customerEmail || '',
+                    customerIdNumber: data.customerIdNumber || '',
+                    customerDob: data.customerDob || '',
+                    customerOccupation: data.customerOccupation || '',
+                    addonTransport: !!data.addonTransport,
+                    customFields: customFields,
+                    sources: sources, // 新增來源欄位
+                    isCheckedIn: false,
+                    createdAt: new Date()
+                });
+                orderForm.reset();
+                customFieldsContainer.innerHTML = '';
+                customerSuggestionsContainer.classList.add('hidden');
+            } catch (error) {
+                console.error("新增訂單失敗:", error);
+            }
+        }
+        
+        // --- Helper: 匯出 CSV ---
+        function exportToCsv(filename, rows) {
+            if (!rows || rows.length === 0) {
+                console.warn("沒有可匯出的資料。");
+                // 可以在此處顯示一個溫和的提示訊息給使用者
+                return;
+            }
+
+            const processRow = (row) => {
+                return row.map(val => {
+                    const str = String(val == null ? '' : val);
+                    if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                        return `"${str.replace(/"/g, '""')}"`;
+                    }
+                    return str;
+                }).join(',');
             };
-      
-
-
-const appId = firebaseConfig.projectId || 'default-app-id';
-
-async function main() {
-try {
-// const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "YOUR_API_KEY") {
-throw new Error("Firebase 設定不正確，請依照註解指示貼上您的設定。");
-}
-const app = initializeApp(firebaseConfig);
-db = getFirestore(app);
-auth = getAuth(app);
-setLogLevel('debug'); // 開發時使用，可看見詳細日誌
-
-// --- 認證監聽 ---
-onAuthStateChanged(auth, user => {
-if (user && !isAppInitialized) {
-isAppInitialized = true; // Set flag
-console.log("使用者已認證:", user.uid);
-initializeAppData(user.uid);
-}
-});
-
-// --- 登入邏輯 ---
-// 在公開網站上，我們將直接使用匿名登入
-await signInAnonymously(auth);
-
-} catch (e) {
-console.error("Firebase 初始化或登入失敗:", e);
-if (appDiv) {
-appDiv.innerHTML = `<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-                       <strong class="font-bold">錯誤!</strong>
-                       <span class="block sm:inline">應用程式初始化失敗，請檢查主控台錯誤訊息。</span>
-                   </div>`;
-}
-}
-}
-
-main();
-
-function initializeAppData(userId) {
-// 定義 Firestore collection 路徑
-eventsCollection = collection(db, `artifacts/${appId}/public/data/events`);
-registrationsCollection = collection(db, `artifacts/${appId}/public/data/registrations`);
-customersCollection = collection(db, `artifacts/${appId}/public/data/customers`);
-registrationSourcesCollection = collection(db, `artifacts/${appId}/public/data/registrationSources`);
-
-initializeCalendar();
-setupEventListeners();
-listenToData();
-checkAndSeedInitialSources(); // 檢查並植入初始來源資料
-}
-
-// --- 月曆初始化 ---
-function initializeCalendar() {
-const calendarEl = document.getElementById('calendar');
-calendar = new FullCalendar.Calendar(calendarEl, {
-initialView: 'dayGridMonth',
-locale: 'zh-tw', // 設定為繁體中文
-headerToolbar: {
-left: 'prev,next today',
-center: 'title',
-right: 'dayGridMonth,dayGridWeek'
-},
-buttonText: {
-today: '今天',
-month: '月',
-week: '週',
-day: '日'
-},
-dateClick: function(info) {
-eventDateInput.value = info.dateStr;
-addEventModal.classList.remove('hidden');
-},
-eventClick: function(info) {
-const eventId = info.event.id;
-const eventDate = info.event.startStr;
-const originalTitle = eventsData.find(e => e.id === eventId)?.title || '';
-// 將 eventId 和 date 附加到匯出按鈕上
-exportEventBtn.dataset.eventId = eventId;
-exportDayFromModalBtn.dataset.eventDate = eventDate;
-showRegistrations(eventId, originalTitle);
-}
-});
-calendar.render();
-}
-
-// --- Firestore 資料監聽 ---
-function listenToData() {
-onSnapshot(eventsCollection, (snapshot) => {
-eventsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-updateCalendarDisplay();
-updateOrderFormDropdown();
-});
-
-onSnapshot(registrationsCollection, (snapshot) => {
-registrationsData = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
-updateCalendarDisplay();
-});
-
-onSnapshot(customersCollection, (snapshot) => {
-customersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-renderCustomerList();
-});
-
-onSnapshot(query(registrationSourcesCollection), (snapshot) => {
-registrationSourcesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-renderRegistrationSources();
-});
-}
-
-// --- 初始資料設定 ---
-async function checkAndSeedInitialSources() {
-const snapshot = await getDocs(registrationSourcesCollection);
-if (snapshot.empty) {
-console.log("正在植入初始報名來源...");
-const defaultSources = ['Line', 'FB', 'Accupass'];
-for (const sourceName of defaultSources) {
-await addDoc(registrationSourcesCollection, { name: sourceName, createdAt: serverTimestamp() });
-}
-}
-}
-
-// --- 畫面渲染 ---
-
-function renderRegistrationSources() {
-// 渲染訂單匯入頁的勾選框
-registrationSourceContainer.innerHTML = registrationSourcesData.map(source => `
-               <div class="flex items-center">
-                   <input id="source-${source.id}" name="sources" value="${source.name}" type="checkbox" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                   <label for="source-${source.id}" class="ml-2 block text-sm text-gray-900">${source.name}</label>
-               </div>
-           `).join('');
-
-// 渲染管理視窗的列表
-sourceManagementList.innerHTML = registrationSourcesData.map(source => `
-               <div class="flex items-center justify-between p-2 bg-gray-100 rounded-md">
-                   <span class="source-name" data-id="${source.id}">${source.name}</span>
-                   <div class="space-x-2">
-                       <button class="edit-source-btn text-xs text-blue-500 hover:underline" data-id="${source.id}" data-name="${source.name}">編輯</button>
-                       <button class="delete-source-btn text-xs text-red-500 hover:underline" data-id="${source.id}">刪除</button>
-                   </div>
-               </div>
-           `).join('');
-}
-
-function renderCustomerList() {
-const searchTerm = customerSearchInput.value.toLowerCase();
-const filteredCustomers = customersData.filter(c => {
-const nameMatch = c.customerName && c.customerName.toLowerCase().includes(searchTerm);
-const phoneMatch = c.primaryPhone && c.primaryPhone.toLowerCase().includes(searchTerm);
-return nameMatch || phoneMatch;
-});
-
-if(filteredCustomers.length === 0) {
-customerListContainer.innerHTML = '<p class="text-center text-gray-500 py-4">找不到客戶或尚無客戶資料。</p>';
-return;
-}
-
-customerListContainer.innerHTML = `
-               <ul class="divide-y divide-gray-200">
-                   ${filteredCustomers.map(c => `
-                       <li class="p-4 hover:bg-gray-50 cursor-pointer" data-customer-id="${c.id}">
-                           <div class="flex justify-between">
-                               <p class="font-semibold text-gray-800">${c.customerName || '未命名'}</p>
-                               <p class="text-sm text-gray-600">${c.primaryPhone || '無電話'}</p>
-                           </div>
-                       </li>
-                   `).join('')}
-               </ul>
-           `;
-}
-
-function updateCalendarDisplay() {
-if (!calendar) return;
-const registrationCounts = registrationsData.reduce((acc, reg) => {
-if (reg.eventId) {
-acc[reg.eventId] = (acc[reg.eventId] || 0) + 1;
-}
-return acc;
-}, {});
-const eventsWithCounts = eventsData.map(event => {
-const count = registrationCounts[event.id] || 0;
-return {
-id: event.id,
-title: `${event.title} (${count}人)`,
-start: event.date,
-allDay: true
-};
-});
-calendar.removeAllEvents();
-calendar.addEventSource(eventsWithCounts);
-}
-
-function updateOrderFormDropdown() {
-const currentEventId = eventSelect.value;
-eventSelect.innerHTML = '<option value="">請先選擇一個活動</option>';
-let currentEventExists = false;
-const sortedEvents = [...eventsData].sort((a, b) => new Date(a.date) - new Date(b.date));
-sortedEvents.forEach(event => {
-const option = document.createElement('option');
-option.value = event.id;
-option.textContent = `${event.date} - ${event.title}`;
-if (event.id === currentEventId) {
-option.selected = true;
-currentEventExists = true;
-}
-eventSelect.appendChild(option);
-});
-if (currentEventId && currentEventExists) {
-eventSelect.value = currentEventId;
-}
-}
-
-// --- 事件處理 ---
-async function showCustomerDetails(customerId) {
-const customer = customersData.find(c => c.id === customerId);
-if (!customer) return;
-
-customerDetailsTitle.textContent = `${customer.customerName || '未命名'} 的詳細資料`;
-
-const customerRegistrations = registrationsData.filter(r => r.customerId === customerId);
-
-let eventHistoryHtml = '<p class="text-sm text-gray-500">尚無參加活動紀錄。</p>';
-if (customerRegistrations.length > 0) {
-eventHistoryHtml = `
-                   <ul class="divide-y divide-gray-200">${customerRegistrations.map(reg => {
-                       const event = eventsData.find(e => e.id === reg.eventId);
-                       return `
-                           <li class="py-2">
-                               <p class="font-medium">${event ? event.title : '未知活動'}</p>
-                               <p class="text-sm text-gray-500">日期: ${event ? event.date : 'N/A'}</p>
-                           </li>`;
-                   }).join('')}</ul>`;
-}
-
-customerDetailsContent.innerHTML = `
-               <div class="space-y-6">
-                   <div>
-                       <h4 class="text-lg font-bold mb-2">基本資料</h4>
-                       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                           <p><strong>電話:</strong> ${customer.primaryPhone || 'N/A'}</p>
-                           <p><strong>Email:</strong> ${customer.customerEmail || 'N/A'}</p>
-                           <p><strong>身分證:</strong> ${customer.customerIdNumber || 'N/A'}</p>
-                           <p><strong>生日:</strong> ${customer.customerDob || 'N/A'}</p>
-                           <p><strong>職業:</strong> ${customer.customerOccupation || 'N/A'}</p>
-                       </div>
-                   </div>
-                   <div>
-                       <h4 class="text-lg font-bold mb-2">備註</h4>
-                       <textarea id="customer-notes-textarea" class="w-full border border-gray-300 rounded-md shadow-sm p-2 text-sm" rows="4">${customer.notes || ''}</textarea>
-                       <button id="save-customer-notes-btn" data-customer-id="${customerId}" class="mt-2 bg-blue-500 text-white px-4 py-2 text-sm rounded-md hover:bg-blue-600">儲存備註</button>
-                   </div>
-                   <div>
-                       <h4 class="text-lg font-bold mb-2">參加過的活動</h4>
-                       ${eventHistoryHtml}
-                   </div>
-               </div>
-           `;
-
-customerDetailsModal.classList.remove('hidden');
-}
-
-async function showRegistrations(eventId, eventTitle) {
-registrationsTitle.textContent = `「${eventTitle}」的報名列表`;
-registrationsListDiv.innerHTML = '<p class="text-center text-gray-500">讀取中...</p>';
-viewRegistrationsModal.classList.remove('hidden');
-
-if (unsubscribeRegistrations) unsubscribeRegistrations();
-
-try {
-const q = query(registrationsCollection, where("eventId", "==", eventId));
-unsubscribeRegistrations = onSnapshot(q, (querySnapshot) => {
-if (querySnapshot.empty) {
-registrationsListDiv.innerHTML = '<p class="text-center text-gray-500">目前尚無報名資料。</p>';
-return;
-}
-let notCheckedInHtml = '<div><h4 class="text-md font-semibold text-gray-700 mb-2 border-b pb-2">未報到</h4><ul class="space-y-3">';
-let checkedInHtml = '<div class="mt-6"><h4 class="text-md font-semibold text-gray-700 mb-2 border-b pb-2">已報到</h4><ul class="space-y-3">';
-let notCheckedInCount = 0;
-let checkedInCount = 0;
-querySnapshot.forEach(doc => {
-const data = doc.data();
-let customFieldsHtml = '';
-if (data.customFields && typeof data.customFields === 'object') {
-for (const [key, value] of Object.entries(data.customFields)) {
-if (key && value) {
-customFieldsHtml += `<p class="text-sm text-gray-500 col-span-1 sm:col-span-2 capitalize">${key}: <span class="font-medium text-gray-700">${value}</span></p>`;
-}
-}
-}
-
-let sourcesHtml = '';
-if (data.sources && Array.isArray(data.sources) && data.sources.length > 0) {
-sourcesHtml = `<div class="col-span-1 sm:col-span-2 flex flex-wrap gap-2 mt-2">
-                               ${data.sources.map(s => `<span class="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded-full">${s}</span>`).join('')}
-                           </div>`;
-}
-
-const itemHtml = `
-                           <li class="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                               <div class="flex items-start space-x-4">
-                                   <input type="checkbox" data-doc-id="${doc.id}" class="check-in-box h-6 w-6 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-1 flex-shrink-0" ${data.isCheckedIn ? 'checked' : ''}>
-                                   <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
-                                       <div class="col-span-1 sm:col-span-2 mb-1">
-                                           <p class="text-lg font-bold text-gray-800">${data.customerName || '未命名'}</p>
-                                       </div>
-                                       <p class="text-sm text-gray-500">身分證: <span class="font-medium text-gray-700">${data.customerIdNumber || 'N/A'}</span></p>
-                                       <p class="text-sm text-gray-500">生日: <span class="font-medium text-gray-700">${data.customerDob || 'N/A'}</span></p>
-                                       <p class="text-sm text-gray-500">電話: <span class="font-medium text-gray-700">${data.customerPhone || 'N/A'}</span></p>
-                                       <p class="text-sm text-gray-500">職業: <span class="font-medium text-gray-700">${data.customerOccupation || 'N/A'}</span></p>
-                                       ${data.customerEmail ? `<p class="text-sm text-gray-500 col-span-1 sm:col-span-2">Email: <span class="font-medium text-gray-700">${data.customerEmail}</span></p>` : ''}
-                                       ${customFieldsHtml}
-                                       ${data.addonTransport ? `<div class="col-span-1 sm:col-span-2 mt-2 pt-2 border-t border-gray-200"><p class="text-sm text-green-600 font-semibold">✓ 已加購交通接送</p></div>` : ''}
-                                       ${sourcesHtml}
-                                   </div>
-                               </div>
-                           </li>`;
-if (data.isCheckedIn) {
-checkedInCount++;
-checkedInHtml += itemHtml;
-} else {
-notCheckedInCount++;
-notCheckedInHtml += itemHtml;
-}
-});
-notCheckedInHtml += '</ul></div>';
-checkedInHtml += '</ul></div>';
-if (notCheckedInCount === 0) notCheckedInHtml = '<div><h4 class="text-md font-semibold text-gray-700 mb-2 border-b pb-2">未報到</h4><p class="text-sm text-gray-500 mt-2">所有人都已報到！</p></div>';
-if (checkedInCount === 0) checkedInHtml = '<div class="mt-6"><h4 class="text-md font-semibold text-gray-700 mb-2 border-b pb-2">已報到</h4><p class="text-sm text-gray-500 mt-2">尚無人報到。</p></div>';
-registrationsListDiv.innerHTML = notCheckedInHtml + checkedInHtml;
-});
-} catch (error) {
-console.error("讀取報名資料失敗:", error);
-registrationsListDiv.innerHTML = '<p class="text-center text-red-500">讀取資料失敗。</p>';
-}
-}
-
-async function handleAddEvent(e) {
-e.preventDefault();
-const title = eventTitleInput.value.trim();
-const date = eventDateInput.value;
-if (title && date) {
-try {
-await addDoc(eventsCollection, { title, date });
-addEventForm.reset();
-addEventModal.classList.add('hidden');
-} catch (error) {
-console.error("新增活動失敗:", error);
-}
-}
-}
-
-async function handleAddOrder(e) {
-e.preventDefault();
-const formData = new FormData(orderForm);
-const data = Object.fromEntries(formData.entries());
-
-if (!data.eventId) { return; }
-
-let customerId;
-const phone = data.customerPhone.trim();
-
-if (phone) {
-const q = query(customersCollection, where("primaryPhone", "==", phone));
-const querySnapshot = await getDocs(q);
-if (querySnapshot.empty) {
-// 新客戶
-const newCustomerRef = await addDoc(customersCollection, {
-primaryPhone: phone,
-customerName: data.customerName || '',
-customerEmail: data.customerEmail || '',
-customerIdNumber: data.customerIdNumber || '',
-customerDob: data.customerDob || '',
-customerOccupation: data.customerOccupation || '',
-notes: '',
-createdAt: serverTimestamp(),
-lastUpdatedAt: serverTimestamp(),
-});
-customerId = newCustomerRef.id;
-} else {
-// 現有客戶
-const customerDoc = querySnapshot.docs[0];
-customerId = customerDoc.id;
-// 可選擇性更新客戶資料
-await updateDoc(doc(customersCollection, customerId), {
-customerName: data.customerName || customerDoc.data().customerName,
-customerEmail: data.customerEmail || customerDoc.data().customerEmail,
-lastUpdatedAt: serverTimestamp(),
-});
-}
-}
-
-const customFields = {};
-customFieldsContainer.querySelectorAll('.custom-field-group').forEach(group => {
-const key = group.querySelector('input[name="custom-key"]').value.trim();
-const value = group.querySelector('input[name="custom-value"]').value.trim();
-if (key && value) customFields[key] = value;
-});
-
-// 處理報名來源
-const sources = [];
-orderForm.querySelectorAll('input[name="sources"]:checked').forEach(checkbox => {
-sources.push(checkbox.value);
-});
-
-try {
-await addDoc(registrationsCollection, {
-eventId: data.eventId,
-customerId: customerId || null, // 關聯客戶 ID
-customerName: data.customerName || '',
-customerPhone: data.customerPhone || '',
-customerEmail: data.customerEmail || '',
-customerIdNumber: data.customerIdNumber || '',
-customerDob: data.customerDob || '',
-customerOccupation: data.customerOccupation || '',
-addonTransport: !!data.addonTransport,
-customFields: customFields,
-sources: sources, // 新增來源欄位
-isCheckedIn: false,
-createdAt: new Date()
-});
-orderForm.reset();
-customFieldsContainer.innerHTML = '';
-customerSuggestionsContainer.classList.add('hidden');
-} catch (error) {
-console.error("新增訂單失敗:", error);
-}
-}
-
-// --- Helper: 匯出 CSV ---
-function exportToCsv(filename, rows) {
-if (!rows || rows.length === 0) {
-console.warn("沒有可匯出的資料。");
-// 可以在此處顯示一個溫和的提示訊息給使用者
-return;
-}
-
-const processRow = (row) => {
-return row.map(val => {
-const str = String(val == null ? '' : val);
-if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-return `"${str.replace(/"/g, '""')}"`;
-}
-return str;
-}).join(',');
-};
-
-const headers = Object.keys(rows[0]);
-let csvContent = processRow(headers) + '\r\n';
-
-rows.forEach(row => {
-const values = headers.map(header => row[header]);
-csvContent += processRow(values) + '\r\n';
-});
-
-// 加上 BOM 來確保 Excel 能正確讀取 UTF-8
-const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-const link = document.createElement("a");
-if (link.download !== undefined) {
-const url = URL.createObjectURL(blob);
-link.setAttribute("href", url);
-link.setAttribute("download", filename);
-link.style.visibility = 'hidden';
-document.body.appendChild(link);
-link.click();
-document.body.removeChild(link);
-}
-}
-
-// --- 事件監聽器設定 ---
-function setupEventListeners() {
-function setActiveButton(activeBtn) {
-[showCalendarBtn, showOrderBtn, showCustomerBtn].forEach(btn => {
-if (btn === activeBtn) {
-btn.classList.replace('bg-gray-200', 'bg-blue-500');
-btn.classList.replace('text-gray-700', 'text-white');
-} else {
-btn.classList.replace('bg-blue-500', 'bg-gray-200');
-btn.classList.replace('text-white', 'text-gray-700');
-}
-});
-}
-
-function showView(activeView) {
-[calendarView, orderView, customerView].forEach(view => {
-if (view === activeView) {
-view.classList.remove('hidden');
-} else {
-view.classList.add('hidden');
-}
-});
-}
-
-showCalendarBtn.addEventListener('click', () => {
-showView(calendarView);
-setActiveButton(showCalendarBtn);
-calendar.render();
-});
-
-showOrderBtn.addEventListener('click', () => {
-showView(orderView);
-setActiveButton(showOrderBtn);
-});
-
-showCustomerBtn.addEventListener('click', () => {
-showView(customerView);
-setActiveButton(showCustomerBtn);
-});
-
-// --- 自動完成搜尋功能 ---
-customerNameInput.addEventListener('input', () => {
-const searchTerm = customerNameInput.value.trim().toLowerCase();
-if (searchTerm.length < 1) {
-customerSuggestionsContainer.classList.add('hidden');
-return;
-}
-
-const filteredCustomers = customersData.filter(c => {
-const nameMatch = c.customerName && c.customerName.toLowerCase().includes(searchTerm);
-const phoneMatch = c.primaryPhone && c.primaryPhone.includes(searchTerm);
-return nameMatch || phoneMatch;
-}).slice(0, 10);
-
-if (filteredCustomers.length > 0) {
-customerSuggestionsContainer.innerHTML = `
-                       <ul class="divide-y divide-gray-100">
-                           ${filteredCustomers.map(c => `
-                               <li class="p-2 cursor-pointer hover:bg-blue-100" data-customer-id="${c.id}">
-                                   <p class="font-semibold text-sm">${c.customerName || 'N/A'}</p>
-                                   <p class="text-xs text-gray-500">${c.primaryPhone || 'N/A'}</p>
-                               </li>
-                           `).join('')}
-                       </ul>
-                   `;
-customerSuggestionsContainer.classList.remove('hidden');
-} else {
-customerSuggestionsContainer.classList.add('hidden');
-}
-});
-
-customerSuggestionsContainer.addEventListener('click', (e) => {
-const selectedLi = e.target.closest('li[data-customer-id]');
-if (selectedLi) {
-const customerId = selectedLi.dataset.customerId;
-const customer = customersData.find(c => c.id === customerId);
-if (customer) {
-orderForm.elements['customerName'].value = customer.customerName || '';
-orderForm.elements['customerPhone'].value = customer.primaryPhone || '';
-orderForm.elements['customerEmail'].value = customer.customerEmail || '';
-orderForm.elements['customerIdNumber'].value = customer.customerIdNumber || '';
-orderForm.elements['customerDob'].value = customer.customerDob || '';
-orderForm.elements['customerOccupation'].value = customer.customerOccupation || '';
-}
-customerSuggestionsContainer.classList.add('hidden');
-}
-});
-
-// 點擊頁面其他地方，隱藏建議列表
-document.addEventListener('click', (e) => {
-if (!customerNameInput.contains(e.target) && !customerSuggestionsContainer.contains(e.target)) {
-customerSuggestionsContainer.classList.add('hidden');
-}
-});
-
-
-customerSearchInput.addEventListener('input', renderCustomerList);
-
-customerListContainer.addEventListener('click', (e) => {
-const listItem = e.target.closest('li[data-customer-id]');
-if (listItem) {
-showCustomerDetails(listItem.dataset.customerId);
-}
-});
-
-// --- 匯出功能事件監聽 ---
-
-exportEventBtn.addEventListener('click', () => {
-const eventId = exportEventBtn.dataset.eventId;
-if (!eventId) return;
-
-const event = eventsData.find(e => e.id === eventId);
-const eventRegistrations = registrationsData.filter(r => r.eventId === eventId);
-
-if (eventRegistrations.length === 0) { return; }
-
-const dataToExport = eventRegistrations.map(reg => ({
-'活動標題': event.title,
-'活動日期': event.date,
-'報名者姓名': reg.customerName,
-'聯絡電話': reg.customerPhone,
-'電子郵件': reg.customerEmail,
-'身分證字號': reg.customerIdNumber,
-'出生年月日': reg.customerDob,
-'職業': reg.customerOccupation,
-'交通接送': reg.addonTransport ? '是' : '否',
-'是否報到': reg.isCheckedIn ? '是' : '否',
-'報名來源': (reg.sources || []).join(', '),
-'自訂欄位': JSON.stringify(reg.customFields || {})
-}));
-
-exportToCsv(`${event.title}_報名資料.csv`, dataToExport);
-});
-
-exportMonthBtn.addEventListener('click', () => {
-const calendarDate = calendar.getDate();
-const year = calendarDate.getFullYear();
-const month = calendarDate.getMonth();
-
-const firstDayOfMonth = new Date(year, month, 1);
-const lastDayOfMonth = new Date(year, month + 1, 0);
-
-const eventIdsThisMonth = eventsData
-.filter(event => {
-const eventDate = new Date(event.date);
-return eventDate >= firstDayOfMonth && eventDate <= lastDayOfMonth;
-})
-.map(event => event.id);
-
-const registrationsThisMonth = registrationsData.filter(reg => eventIdsThisMonth.includes(reg.eventId));
-
-if (registrationsThisMonth.length === 0) { return; }
-
-const dataToExport = registrationsThisMonth.map(reg => {
-const event = eventsData.find(e => e.id === reg.eventId) || {};
-return {
-'活動標題': event.title,
-'活動日期': event.date,
-'報名者姓名': reg.customerName,
-'聯絡電話': reg.customerPhone,
-'電子郵件': reg.customerEmail,
-'身分證字號': reg.customerIdNumber,
-'出生年月日': reg.customerDob,
-'職業': reg.customerOccupation,
-'交通接送': reg.addonTransport ? '是' : '否',
-'是否報到': reg.isCheckedIn ? '是' : '否',
-'報名來源': (reg.sources || []).join(', '),
-'自訂欄位': JSON.stringify(reg.customFields || {})
-};
-});
-
-exportToCsv(`報名資料_${year}-${String(month + 1).padStart(2, '0')}.csv`, dataToExport);
-});
-
-exportDayFromModalBtn.addEventListener('click', () => {
-const eventDate = exportDayFromModalBtn.dataset.eventDate;
-if (!eventDate) return;
-
-const eventIdsOnDate = eventsData
-.filter(event => event.date === eventDate)
-.map(event => event.id);
-
-if (eventIdsOnDate.length === 0) { return; }
-
-const registrationsOnDate = registrationsData.filter(reg => eventIdsOnDate.includes(reg.eventId));
-
-if (registrationsOnDate.length === 0) { return; }
-
-const dataToExport = registrationsOnDate.map(reg => {
-const event = eventsData.find(e => e.id === reg.eventId) || {};
-return {
-'活動標題': event.title,
-'活動日期': event.date,
-'報名者姓名': reg.customerName,
-'聯絡電話': reg.customerPhone,
-'電子郵件': reg.customerEmail,
-'身分證字號': reg.customerIdNumber,
-'出生年月日': reg.customerDob,
-'職業': reg.customerOccupation,
-'交通接送': reg.addonTransport ? '是' : '否',
-'是否報到': reg.isCheckedIn ? '是' : '否',
-'報名來源': (reg.sources || []).join(', '),
-'自訂欄位': JSON.stringify(reg.customFields || {})
-};
-});
-
-exportToCsv(`報名資料_${eventDate}.csv`, dataToExport);
-});
-
-
-cancelAddEventBtn.addEventListener('click', () => addEventModal.classList.add('hidden'));
-closeRegistrationsModalBtn.addEventListener('click', () => {
-viewRegistrationsModal.classList.add('hidden');
-if (unsubscribeRegistrations) {
-unsubscribeRegistrations();
-unsubscribeRegistrations = null;
-}
-});
-closeCustomerDetailsModalBtn.addEventListener('click', () => customerDetailsModal.classList.add('hidden'));
-
-// --- 報名來源管理 Modal ---
-manageSourcesBtn.addEventListener('click', () => manageSourcesModal.classList.remove('hidden'));
-closeSourcesModalBtn.addEventListener('click', () => manageSourcesModal.classList.add('hidden'));
-
-addSourceForm.addEventListener('submit', async (e) => {
-e.preventDefault();
-const newName = newSourceNameInput.value.trim();
-if (newName) {
-try {
-await addDoc(registrationSourcesCollection, { name: newName, createdAt: serverTimestamp() });
-newSourceNameInput.value = '';
-} catch (error) {
-console.error("新增來源失敗:", error);
-}
-}
-});
-
-sourceManagementList.addEventListener('click', async (e) => {
-const target = e.target;
-const id = target.dataset.id;
-
-if (target.classList.contains('delete-source-btn')) {
-if (id && confirm('確定要刪除這個來源嗎？')) {
-try {
-await deleteDoc(doc(registrationSourcesCollection, id));
-} catch (error) {
-console.error("刪除來源失敗:", error);
-}
-}
-}
-
-if (target.classList.contains('edit-source-btn')) {
-const currentName = target.dataset.name;
-const newName = prompt('請輸入新的來源名稱:', currentName);
-if (newName && newName.trim() !== "" && newName.trim() !== currentName) {
-try {
-await updateDoc(doc(registrationSourcesCollection, id), { name: newName.trim() });
-} catch (error) {
-console.error("編輯來源失敗:", error);
-}
-}
-}
-});
-
-
-customerDetailsContent.addEventListener('click', async (e) => {
-if (e.target.id === 'save-customer-notes-btn') {
-const btn = e.target;
-const customerId = btn.dataset.customerId;
-const notes = document.getElementById('customer-notes-textarea').value;
-if (!customerId) return;
-try {
-const docRef = doc(customersCollection, customerId);
-await updateDoc(docRef, { notes });
-btn.textContent = '已儲存!';
-setTimeout(() => { btn.textContent = '儲存備註'; }, 2000);
-} catch (error) {
-console.error("儲存備註失敗:", error);
-}
-}
-});
-
-addEventForm.addEventListener('submit', handleAddEvent);
-orderForm.addEventListener('submit', handleAddOrder);
-
-addCustomFieldBtn.addEventListener('click', () => {
-const newField = document.createElement('div');
-newField.className = 'custom-field-group grid grid-cols-10 gap-2 items-center';
-newField.innerHTML = `
-                   <div class="col-span-4">
-                       <input type="text" name="custom-key" placeholder="欄位名稱" class="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                   </div>
-                   <div class="col-span-5">
-                       <input type="text" name="custom-value" placeholder="欄位值" class="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                   </div>
-                   <div class="col-span-1">
-                       <button type="button" class="remove-custom-field-btn text-red-500 hover:text-red-700 text-xl font-bold">&times;</button>
-                   </div>`;
-customFieldsContainer.appendChild(newField);
-});
-
-customFieldsContainer.addEventListener('click', (e) => {
-if (e.target.classList.contains('remove-custom-field-btn')) {
-e.target.closest('.custom-field-group').remove();
-}
-});
-
-registrationsListDiv.addEventListener('change', async (e) => {
-if (e.target.classList.contains('check-in-box')) {
-const docId = e.target.dataset.docId;
-const isChecked = e.target.checked;
-if (!docId) return;
-try {
-await updateDoc(doc(registrationsCollection, docId), { isCheckedIn: isChecked });
-} catch (error) {
-console.error("更新報到狀態失敗:", error);
-}
-}
-});
-}
-</script>
+
+            const headers = Object.keys(rows[0]);
+            let csvContent = processRow(headers) + '\r\n';
+
+            rows.forEach(row => {
+                const values = headers.map(header => row[header]);
+                csvContent += processRow(values) + '\r\n';
+            });
+            
+            // 加上 BOM 來確保 Excel 能正確讀取 UTF-8
+            const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", filename);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
+
+        // --- 事件監聽器設定 ---
+        function setupEventListeners() {
+            function setActiveButton(activeBtn) {
+                [showCalendarBtn, showOrderBtn, showCustomerBtn].forEach(btn => {
+                    if (btn === activeBtn) {
+                        btn.classList.replace('bg-gray-200', 'bg-blue-500');
+                        btn.classList.replace('text-gray-700', 'text-white');
+                    } else {
+                        btn.classList.replace('bg-blue-500', 'bg-gray-200');
+                        btn.classList.replace('text-white', 'text-gray-700');
+                    }
+                });
+            }
+
+            function showView(activeView) {
+                 [calendarView, orderView, customerView].forEach(view => {
+                    if (view === activeView) {
+                        view.classList.remove('hidden');
+                    } else {
+                        view.classList.add('hidden');
+                    }
+                });
+            }
+
+            showCalendarBtn.addEventListener('click', () => {
+                showView(calendarView);
+                setActiveButton(showCalendarBtn);
+                calendar.render();
+            });
+
+            showOrderBtn.addEventListener('click', () => {
+                showView(orderView);
+                setActiveButton(showOrderBtn);
+            });
+            
+            showCustomerBtn.addEventListener('click', () => {
+                showView(customerView);
+                setActiveButton(showCustomerBtn);
+            });
+
+            // --- 自動完成搜尋功能 ---
+            customerNameInput.addEventListener('input', () => {
+                const searchTerm = customerNameInput.value.trim().toLowerCase();
+                if (searchTerm.length < 1) {
+                    customerSuggestionsContainer.classList.add('hidden');
+                    return;
+                }
+
+                const filteredCustomers = customersData.filter(c => {
+                    const nameMatch = c.customerName && c.customerName.toLowerCase().includes(searchTerm);
+                    const phoneMatch = c.primaryPhone && c.primaryPhone.includes(searchTerm);
+                    return nameMatch || phoneMatch;
+                }).slice(0, 10);
+
+                if (filteredCustomers.length > 0) {
+                    customerSuggestionsContainer.innerHTML = `
+                        <ul class="divide-y divide-gray-100">
+                            ${filteredCustomers.map(c => `
+                                <li class="p-2 cursor-pointer hover:bg-blue-100" data-customer-id="${c.id}">
+                                    <p class="font-semibold text-sm">${c.customerName || 'N/A'}</p>
+                                    <p class="text-xs text-gray-500">${c.primaryPhone || 'N/A'}</p>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    `;
+                    customerSuggestionsContainer.classList.remove('hidden');
+                } else {
+                    customerSuggestionsContainer.classList.add('hidden');
+                }
+            });
+
+            customerSuggestionsContainer.addEventListener('click', (e) => {
+                const selectedLi = e.target.closest('li[data-customer-id]');
+                if (selectedLi) {
+                    const customerId = selectedLi.dataset.customerId;
+                    const customer = customersData.find(c => c.id === customerId);
+                    if (customer) {
+                        orderForm.elements['customerName'].value = customer.customerName || '';
+                        orderForm.elements['customerPhone'].value = customer.primaryPhone || '';
+                        orderForm.elements['customerEmail'].value = customer.customerEmail || '';
+                        orderForm.elements['customerIdNumber'].value = customer.customerIdNumber || '';
+                        orderForm.elements['customerDob'].value = customer.customerDob || '';
+                        orderForm.elements['customerOccupation'].value = customer.customerOccupation || '';
+                    }
+                    customerSuggestionsContainer.classList.add('hidden');
+                }
+            });
+
+            // 點擊頁面其他地方，隱藏建議列表
+            document.addEventListener('click', (e) => {
+                if (!customerNameInput.contains(e.target) && !customerSuggestionsContainer.contains(e.target)) {
+                    customerSuggestionsContainer.classList.add('hidden');
+                }
+            });
+
+
+            customerSearchInput.addEventListener('input', renderCustomerList);
+
+            customerListContainer.addEventListener('click', (e) => {
+                const listItem = e.target.closest('li[data-customer-id]');
+                if (listItem) {
+                    showCustomerDetails(listItem.dataset.customerId);
+                }
+            });
+
+            // --- 匯出功能事件監聽 ---
+
+            exportEventBtn.addEventListener('click', () => {
+                const eventId = exportEventBtn.dataset.eventId;
+                if (!eventId) return;
+
+                const event = eventsData.find(e => e.id === eventId);
+                const eventRegistrations = registrationsData.filter(r => r.eventId === eventId);
+                
+                if (eventRegistrations.length === 0) { return; }
+
+                const dataToExport = eventRegistrations.map(reg => ({
+                    '活動標題': event.title,
+                    '活動日期': event.date,
+                    '報名者姓名': reg.customerName,
+                    '聯絡電話': reg.customerPhone,
+                    '電子郵件': reg.customerEmail,
+                    '身分證字號': reg.customerIdNumber,
+                    '出生年月日': reg.customerDob,
+                    '職業': reg.customerOccupation,
+                    '交通接送': reg.addonTransport ? '是' : '否',
+                    '報名來源': (reg.sources || []).join(', '),
+                    '自訂欄位': JSON.stringify(reg.customFields || {}),
+                    '是否報到': reg.isCheckedIn ? '是' : '否'
+                }));
+
+                exportToCsv(`${event.title}_報名資料.csv`, dataToExport);
+            });
+
+            exportMonthBtn.addEventListener('click', () => {
+                const calendarDate = calendar.getDate();
+                const year = calendarDate.getFullYear();
+                const month = calendarDate.getMonth();
+
+                const firstDayOfMonth = new Date(year, month, 1);
+                const lastDayOfMonth = new Date(year, month + 1, 0);
+
+                const eventIdsThisMonth = eventsData
+                    //.filter(event => new Date(event.date) >= firstDayOfMonth && new Date(event.date) <= lastDayOfMonth)
+                    .filter(event => {
+                        const eventDate = new Date(event.date);
+                        return eventDate >= firstDayOfMonth && eventDate <= lastDayOfMonth;
+                    })
+                    .map(event => event.id);
+
+                const registrationsThisMonth = registrationsData.filter(reg => eventIdsThisMonth.includes(reg.eventId));
+                
+                if (registrationsThisMonth.length === 0) { return; }
+
+                const dataToExport = registrationsThisMonth.map(reg => {
+                    const event = eventsData.find(e => e.id === reg.eventId) || {};
+                    return {
+                        '活動標題': event.title,
+                        '活動日期': event.date,
+                        '報名者姓名': reg.customerName,
+                        '聯絡電話': reg.customerPhone,
+                        '電子郵件': reg.customerEmail,
+                        '身分證字號': reg.customerIdNumber,
+                        '出生年月日': reg.customerDob,
+                        '職業': reg.customerOccupation,
+                        '交通接送': reg.addonTransport ? '是' : '否',
+                        '報名來源': (reg.sources || []).join(', '),
+                        '自訂欄位': JSON.stringify(reg.customFields || {}),
+                        '是否報到': reg.isCheckedIn ? '是' : '否'
+                    };
+                });
+                
+                exportToCsv(`報名資料_${year}-${String(month + 1).padStart(2, '0')}.csv`, dataToExport);
+            });
+
+            exportDayFromModalBtn.addEventListener('click', () => {
+                const eventDate = exportDayFromModalBtn.dataset.eventDate;
+                if (!eventDate) return;
+
+                const eventIdsOnDate = eventsData
+                    .filter(event => event.date === eventDate)
+                    .map(event => event.id);
+                
+                if (eventIdsOnDate.length === 0) { return; }
+
+                const registrationsOnDate = registrationsData.filter(reg => eventIdsOnDate.includes(reg.eventId));
+
+                if (registrationsOnDate.length === 0) { return; }
+
+                const dataToExport = registrationsOnDate.map(reg => {
+                    const event = eventsData.find(e => e.id === reg.eventId) || {};
+                    return {
+                        '活動標題': event.title,
+                        '活動日期': event.date,
+                        '報名者姓名': reg.customerName,
+                        '聯絡電話': reg.customerPhone,
+                        '電子郵件': reg.customerEmail,
+                        '身分證字號': reg.customerIdNumber,
+                        '出生年月日': reg.customerDob,
+                        '職業': reg.customerOccupation,
+                        '交通接送': reg.addonTransport ? '是' : '否',
+                        '報名來源': (reg.sources || []).join(', '),
+                        '自訂欄位': JSON.stringify(reg.customFields || {}),
+                        '是否報到': reg.isCheckedIn ? '是' : '否'
+                    };
+                });
+
+                exportToCsv(`報名資料_${eventDate}.csv`, dataToExport);
+            });
+
+
+            cancelAddEventBtn.addEventListener('click', () => addEventModal.classList.add('hidden'));
+            closeRegistrationsModalBtn.addEventListener('click', () => {
+                viewRegistrationsModal.classList.add('hidden');
+                if (unsubscribeRegistrations) {
+                    unsubscribeRegistrations();
+                    unsubscribeRegistrations = null;
+                }
+            });
+            closeCustomerDetailsModalBtn.addEventListener('click', () => customerDetailsModal.classList.add('hidden'));
+            
+            // --- 報名來源管理 Modal ---
+            manageSourcesBtn.addEventListener('click', () => manageSourcesModal.classList.remove('hidden'));
+            closeSourcesModalBtn.addEventListener('click', () => manageSourcesModal.classList.add('hidden'));
+
+            addSourceForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const newName = newSourceNameInput.value.trim();
+                if (newName) {
+                    try {
+                        await addDoc(registrationSourcesCollection, { name: newName, createdAt: serverTimestamp() });
+                        newSourceNameInput.value = '';
+                    } catch (error) {
+                        console.error("新增來源失敗:", error);
+                    }
+                }
+            });
+
+            sourceManagementList.addEventListener('click', async (e) => {
+                const target = e.target;
+                const id = target.dataset.id;
+                
+                if (target.classList.contains('delete-source-btn')) {
+                    if (id && confirm('確定要刪除這個來源嗎？')) {
+                        try {
+                            await deleteDoc(doc(registrationSourcesCollection, id));
+                        } catch (error) {
+                            console.error("刪除來源失敗:", error);
+                        }
+                    }
+                }
+
+                if (target.classList.contains('edit-source-btn')) {
+                    const currentName = target.dataset.name;
+                    const newName = prompt('請輸入新的來源名稱:', currentName);
+                    if (newName && newName.trim() !== "" && newName.trim() !== currentName) {
+                        try {
+                            await updateDoc(doc(registrationSourcesCollection, id), { name: newName.trim() });
+                        } catch (error) {
+                            console.error("編輯來源失敗:", error);
+                        }
+                    }
+                }
+            });
+
+
+            customerDetailsContent.addEventListener('click', async (e) => {
+                if (e.target.id === 'save-customer-notes-btn') {
+                    const btn = e.target;
+                    const customerId = btn.dataset.customerId;
+                    const notes = document.getElementById('customer-notes-textarea').value;
+                    if (!customerId) return;
+                    try {
+                        const docRef = doc(customersCollection, customerId);
+                        await updateDoc(docRef, { notes });
+                        btn.textContent = '已儲存!';
+                        setTimeout(() => { btn.textContent = '儲存備註'; }, 2000);
+                    } catch (error) {
+                        console.error("儲存備註失敗:", error);
+                    }
+                }
+
+                if (e.target.id === 'edit-customer-btn') {
+                    const displayDiv = customerDetailsContent.querySelector('#customer-info-display');
+                    const formDiv = customerDetailsContent.querySelector('#customer-info-form');
+                    displayDiv.classList.add('hidden');
+                    formDiv.classList.remove('hidden');
+                    e.target.classList.add('hidden');
+                }
+
+                if (e.target.id === 'cancel-customer-edit-btn') {
+                    const displayDiv = customerDetailsContent.querySelector('#customer-info-display');
+                    const formDiv = customerDetailsContent.querySelector('#customer-info-form');
+                    displayDiv.classList.remove('hidden');
+                    formDiv.classList.add('hidden');
+                    customerDetailsContent.querySelector('#edit-customer-btn').classList.remove('hidden');
+                }
+            });
+
+            customerDetailsContent.addEventListener('submit', async (e) => {
+                if (e.target.id === 'customer-info-form') {
+                    e.preventDefault();
+                    const form = e.target;
+                    const customerId = form.dataset.customerId;
+                    if (!customerId) return;
+
+                    const updatedData = {
+                        customerName: form.elements.customerName.value.trim(),
+                        primaryPhone: form.elements.primaryPhone.value.trim(),
+                        customerEmail: form.elements.customerEmail.value.trim(),
+                        customerIdNumber: form.elements.customerIdNumber.value.trim(),
+                        customerDob: form.elements.customerDob.value,
+                        customerOccupation: form.elements.customerOccupation.value.trim(),
+                        lastUpdatedAt: serverTimestamp(),
+                    };
+
+                    try {
+                        const docRef = doc(customersCollection, customerId);
+                        await updateDoc(docRef, updatedData);
+                        
+                        // Manually update the display div after saving
+                        const displayDiv = customerDetailsContent.querySelector('#customer-info-display');
+                        displayDiv.querySelector('[data-field="customerName"]').textContent = updatedData.customerName || 'N/A';
+                        displayDiv.querySelector('[data-field="primaryPhone"]').textContent = updatedData.primaryPhone || 'N/A';
+                        displayDiv.querySelector('[data-field="customerEmail"]').textContent = updatedData.customerEmail || 'N/A';
+                        displayDiv.querySelector('[data-field="customerIdNumber"]').textContent = updatedData.customerIdNumber || 'N/A';
+                        displayDiv.querySelector('[data-field="customerDob"]').textContent = updatedData.customerDob || 'N/A';
+                        displayDiv.querySelector('[data-field="customerOccupation"]').textContent = updatedData.customerOccupation || 'N/A';
+                        
+                        // Toggle back to display view
+                        displayDiv.classList.remove('hidden');
+                        form.classList.add('hidden');
+                        customerDetailsContent.querySelector('#edit-customer-btn').classList.remove('hidden');
+
+                    } catch (error) {
+                        console.error("更新客戶資料失敗:", error);
+                    }
+                }
+            });
+
+            addEventForm.addEventListener('submit', handleAddEvent);
+            orderForm.addEventListener('submit', handleAddOrder);
+
+            addCustomFieldBtn.addEventListener('click', () => {
+                const newField = document.createElement('div');
+                newField.className = 'custom-field-group grid grid-cols-10 gap-2 items-center';
+                newField.innerHTML = `
+                    <div class="col-span-4">
+                        <input type="text" name="custom-key" placeholder="欄位名稱" class="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div class="col-span-5">
+                        <input type="text" name="custom-value" placeholder="欄位值" class="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div class="col-span-1">
+                        <button type="button" class="remove-custom-field-btn text-red-500 hover:text-red-700 text-xl font-bold">&times;</button>
+                    </div>`;
+                customFieldsContainer.appendChild(newField);
+            });
+
+            customFieldsContainer.addEventListener('click', (e) => {
+                if (e.target.classList.contains('remove-custom-field-btn')) {
+                    e.target.closest('.custom-field-group').remove();
+                }
+            });
+
+            registrationsListDiv.addEventListener('change', async (e) => {
+                if (e.target.classList.contains('check-in-box')) {
+                    const docId = e.target.dataset.docId;
+                    const isChecked = e.target.checked;
+                    if (!docId) return;
+                    try {
+                        await updateDoc(doc(registrationsCollection, docId), { isCheckedIn: isChecked });
+                    } catch (error) {
+                        console.error("更新報到狀態失敗:", error);
+                    }
+                }
+            });
+        }
+    </script>
 </body>
 </html>
 
-~
