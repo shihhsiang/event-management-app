@@ -34,7 +34,7 @@
             transition: background-color: 0.2s;
         }
         .fc-event:hover {
-            background-color: #1d4ed8;
+            opacity: 0.8;
         }
         /* 隱藏元素用的 class */
         .hidden {
@@ -179,19 +179,36 @@
         </main>
     </div>
 
-    <!-- 新增活動 Modal -->
+    <!-- 新增/編輯活動 Modal -->
     <div id="add-event-modal" class="hidden modal-backdrop">
         <div class="modal-content bg-white w-11/12 md:max-w-md mx-auto rounded-lg shadow-xl p-6">
-            <h3 class="text-xl font-bold mb-4">新增活動</h3>
-            <form id="add-event-form">
+            <h3 class="text-xl font-bold mb-4" id="event-modal-title">新增活動</h3>
+            <form id="event-form" class="space-y-4">
+                <input type="hidden" id="event-id">
                 <div>
                     <label for="event-title" class="block text-sm font-medium text-gray-700">活動標題</label>
                     <input type="text" id="event-title" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                     <input type="hidden" id="event-date">
                 </div>
-                <div class="mt-6 flex justify-end space-x-3">
-                    <button type="button" id="cancel-add-event" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300">取消</button>
-                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">儲存</button>
+                <div>
+                    <label for="event-instructor" class="block text-sm font-medium text-gray-700">帶團講師 (選填)</label>
+                    <input type="text" id="event-instructor" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">活動顏色</label>
+                    <div id="color-palette" class="flex space-x-2 mt-2">
+                        <!-- Colors will be injected here by JS -->
+                    </div>
+                    <input type="hidden" id="event-color">
+                </div>
+                <div class="mt-6 flex justify-between items-center">
+                    <div>
+                         <button type="button" id="delete-event-btn" class="hidden bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700">刪除活動</button>
+                    </div>
+                    <div class="flex space-x-3">
+                        <button type="button" id="cancel-event-form" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300">取消</button>
+                        <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">儲存</button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -203,6 +220,7 @@
             <div class="flex justify-between items-center mb-4">
                 <h3 id="registrations-title" class="text-xl font-bold">報名列表</h3>
                 <div class="flex items-center space-x-2">
+                     <button id="edit-event-btn" class="px-3 py-1 text-xs font-semibold text-white bg-yellow-500 rounded-md hover:bg-yellow-600">編輯活動</button>
                      <button id="export-event-btn" class="px-3 py-1 text-xs font-semibold text-white bg-green-600 rounded-md hover:bg-green-700">匯出此活動</button>
                      <button id="export-day-from-modal-btn" class="px-3 py-1 text-xs font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700">匯出本日報名</button>
                     <button id="close-registrations-modal" class="ml-2 text-gray-500 hover:text-gray-800 text-2xl leading-none">&times;</button>
@@ -249,7 +267,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, addDoc, query, where, getDocs, setLogLevel, doc, updateDoc, serverTimestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, addDoc, query, where, getDocs, setLogLevel, doc, updateDoc, serverTimestamp, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- DOM 元素 ---
         const appDiv = document.getElementById('app');
@@ -260,10 +278,13 @@
         const showOrderBtn = document.getElementById('show-order-btn');
         const showCustomerBtn = document.getElementById('show-customer-btn');
         const addEventModal = document.getElementById('add-event-modal');
-        const addEventForm = document.getElementById('add-event-form');
-        const cancelAddEventBtn = document.getElementById('cancel-add-event');
+        const eventForm = document.getElementById('event-form');
+        const cancelEventFormBtn = document.getElementById('cancel-event-form');
         const eventTitleInput = document.getElementById('event-title');
         const eventDateInput = document.getElementById('event-date');
+        const eventIdInput = document.getElementById('event-id');
+        const eventModalTitle = document.getElementById('event-modal-title');
+        const deleteEventBtn = document.getElementById('delete-event-btn');
         const orderForm = document.getElementById('order-form');
         const eventSelect = document.getElementById('event-select');
         const viewRegistrationsModal = document.getElementById('view-registrations-modal');
@@ -283,6 +304,7 @@
         const exportMonthBtn = document.getElementById('export-month-btn');
         const exportEventBtn = document.getElementById('export-event-btn');
         const exportDayFromModalBtn = document.getElementById('export-day-from-modal-btn');
+        const editEventBtn = document.getElementById('edit-event-btn');
         const manageSourcesBtn = document.getElementById('manage-sources-btn');
         const manageSourcesModal = document.getElementById('manage-sources-modal');
         const closeSourcesModalBtn = document.getElementById('close-sources-modal');
@@ -290,6 +312,9 @@
         const newSourceNameInput = document.getElementById('new-source-name');
         const sourceManagementList = document.getElementById('source-management-list');
         const registrationSourceContainer = document.getElementById('registration-source-container');
+        const eventInstructorInput = document.getElementById('event-instructor');
+        const colorPaletteContainer = document.getElementById('color-palette');
+        const eventColorInput = document.getElementById('event-color');
 
         // --- Firebase 設定 ---
         let db, auth;
@@ -301,6 +326,8 @@
         let registrationsData = []; // 儲存報名資料
         let customersData = []; // 儲存客戶資料
         let registrationSourcesData = []; // 儲存報名來源選項
+
+        const colorPalette = ['#3b82f6', '#10b981', '#ef4444', '#f97316', '#8b5cf6', '#ec4899']; // 預設顏色
 
         const firebaseConfig = {
             apiKey: "AIzaSyCObFRNQxxXzcG5XSsCHWM-RbSLFOAACYo",
@@ -376,6 +403,7 @@
             setupEventListeners();
             listenToData();
             checkAndSeedInitialSources(); // 檢查並植入初始來源資料
+            renderColorPalette(); // 渲染顏色選擇器
         }
 
         // --- 月曆初始化 ---
@@ -396,17 +424,28 @@
                     day: '日'
                 },
                 dateClick: function(info) {
+                    eventForm.reset();
+                    eventModalTitle.textContent = "新增活動";
+                    eventIdInput.value = '';
                     eventDateInput.value = info.dateStr;
+                    deleteEventBtn.classList.add('hidden');
+                    // Reset color selection to default
+                    eventColorInput.value = colorPalette[0];
+                    renderColorPalette();
                     addEventModal.classList.remove('hidden');
                 },
                 eventClick: function(info) {
                     const eventId = info.event.id;
                     const eventDate = info.event.startStr;
-                    const originalTitle = eventsData.find(e => e.id === eventId)?.title || '';
+                    const event = eventsData.find(e => e.id === eventId);
+                    const originalTitle = event?.title || '';
+                    const instructor = event?.instructor || '';
+
                     // 將 eventId 和 date 附加到匯出按鈕上
                     exportEventBtn.dataset.eventId = eventId;
                     exportDayFromModalBtn.dataset.eventDate = eventDate;
-                    showRegistrations(eventId, originalTitle);
+                    editEventBtn.dataset.eventId = eventId; // Pass eventId to edit button
+                    showRegistrations(eventId, originalTitle, instructor);
                 }
             });
             calendar.render();
@@ -449,6 +488,21 @@
         }
 
         // --- 畫面渲染 ---
+
+        function renderColorPalette() {
+            colorPaletteContainer.innerHTML = colorPalette.map(color => `
+                <div class="w-8 h-8 rounded-full cursor-pointer border-2" style="background-color: ${color};" data-color="${color}"></div>
+            `).join('');
+            
+            const selectedColor = eventColorInput.value || colorPalette[0];
+            const selectedDiv = colorPaletteContainer.querySelector(`div[data-color="${selectedColor}"]`);
+            if (selectedDiv) {
+                selectedDiv.classList.add('border-black', 'ring-2', 'ring-offset-2', 'ring-gray-800');
+            } else {
+                 const firstColorDiv = colorPaletteContainer.querySelector('div');
+                 if(firstColorDiv) firstColorDiv.classList.add('border-black', 'ring-2', 'ring-offset-2', 'ring-gray-800');
+            }
+        }
 
         function renderRegistrationSources() {
             // 渲染訂單匯入頁的勾選框
@@ -508,11 +562,14 @@
             }, {});
             const eventsWithCounts = eventsData.map(event => {
                 const count = registrationCounts[event.id] || 0;
+                const displayTitle = event.instructor ? `[${event.instructor}] ${event.title} (${count}人)` : `${event.title} (${count}人)`;
                 return {
                     id: event.id,
-                    title: `${event.title} (${count}人)`,
+                    title: displayTitle,
                     start: event.date,
-                    allDay: true
+                    allDay: true,
+                    backgroundColor: event.color || '#3b82f6', // Use saved color with fallback
+                    borderColor: event.color || '#3b82f6' // Also for border
                 };
             });
             calendar.removeAllEvents();
@@ -628,8 +685,9 @@
             customerDetailsModal.classList.remove('hidden');
         }
 
-        async function showRegistrations(eventId, eventTitle) {
-            registrationsTitle.textContent = `「${eventTitle}」的報名列表`;
+        async function showRegistrations(eventId, eventTitle, instructor) {
+            const titleText = instructor ? `「${eventTitle}」 by ${instructor}` : `「${eventTitle}」的報名列表`;
+            registrationsTitle.textContent = titleText;
             registrationsListDiv.innerHTML = '<p class="text-center text-gray-500">讀取中...</p>';
             viewRegistrationsModal.classList.remove('hidden');
 
@@ -703,18 +761,31 @@
             }
         }
         
-        async function handleAddEvent(e) {
+        async function handleEventFormSubmit(e) {
             e.preventDefault();
+            const eventId = eventIdInput.value;
             const title = eventTitleInput.value.trim();
             const date = eventDateInput.value;
-            if (title && date) {
-                try {
-                    await addDoc(eventsCollection, { title, date });
-                    addEventForm.reset();
-                    addEventModal.classList.add('hidden');
-                } catch (error) {
-                    console.error("新增活動失敗:", error);
+            const instructor = eventInstructorInput.value.trim();
+            const color = eventColorInput.value;
+
+            if (!title || !date) return;
+
+            const eventData = { title, date, instructor, color };
+
+            try {
+                if (eventId) {
+                    // Update existing event
+                    const eventRef = doc(eventsCollection, eventId);
+                    await updateDoc(eventRef, eventData);
+                } else {
+                    // Add new event
+                    await addDoc(eventsCollection, eventData);
                 }
+                eventForm.reset();
+                addEventModal.classList.add('hidden');
+            } catch (error) {
+                console.error("儲存活動失敗:", error);
             }
         }
 
@@ -978,7 +1049,6 @@
                 const lastDayOfMonth = new Date(year, month + 1, 0);
 
                 const eventIdsThisMonth = eventsData
-                    //.filter(event => new Date(event.date) >= firstDayOfMonth && new Date(event.date) <= lastDayOfMonth)
                     .filter(event => {
                         const eventDate = new Date(event.date);
                         return eventDate >= firstDayOfMonth && eventDate <= lastDayOfMonth;
@@ -1045,8 +1115,56 @@
                 exportToCsv(`報名資料_${eventDate}.csv`, dataToExport);
             });
 
+            editEventBtn.addEventListener('click', () => {
+                const eventId = editEventBtn.dataset.eventId;
+                const event = eventsData.find(e => e.id === eventId);
+                if (event) {
+                    eventForm.reset();
+                    eventModalTitle.textContent = "編輯活動";
+                    eventIdInput.value = event.id;
+                    eventDateInput.value = event.date;
+                    eventTitleInput.value = event.title;
+                    eventInstructorInput.value = event.instructor || '';
+                    eventColorInput.value = event.color || colorPalette[0];
+                    deleteEventBtn.classList.remove('hidden');
+                    renderColorPalette();
+                    addEventModal.classList.remove('hidden');
+                    // 自動關閉後方的報名列表視窗，優化體驗
+                    viewRegistrationsModal.classList.add('hidden');
+                }
+            });
 
-            cancelAddEventBtn.addEventListener('click', () => addEventModal.classList.add('hidden'));
+            deleteEventBtn.addEventListener('click', async () => {
+                const eventId = eventIdInput.value;
+                if (!eventId) return;
+
+                if (confirm('確定要刪除這個活動嗎？\n所有相關的報名資料將會一併永久刪除！')) {
+                    try {
+                        // Find all registrations for this event
+                        const q = query(registrationsCollection, where("eventId", "==", eventId));
+                        const registrationsSnapshot = await getDocs(q);
+
+                        const batch = writeBatch(db);
+
+                        // Delete all related registrations
+                        registrationsSnapshot.forEach(doc => {
+                            batch.delete(doc.ref);
+                        });
+
+                        // Delete the event itself
+                        batch.delete(doc(eventsCollection, eventId));
+
+                        await batch.commit();
+
+                        addEventModal.classList.add('hidden');
+                        viewRegistrationsModal.classList.add('hidden');
+                    } catch (error) {
+                        console.error("刪除活動失敗:", error);
+                    }
+                }
+            });
+
+            cancelEventFormBtn.addEventListener('click', () => addEventModal.classList.add('hidden'));
             closeRegistrationsModalBtn.addEventListener('click', () => {
                 viewRegistrationsModal.classList.add('hidden');
                 if (unsubscribeRegistrations) {
@@ -1100,6 +1218,13 @@
                 }
             });
 
+            colorPaletteContainer.addEventListener('click', (e) => {
+                if(e.target.dataset.color) {
+                    Array.from(colorPaletteContainer.children).forEach(child => child.classList.remove('border-black', 'ring-2', 'ring-offset-2', 'ring-gray-800'));
+                    e.target.classList.add('border-black', 'ring-2', 'ring-offset-2', 'ring-gray-800');
+                    eventColorInput.value = e.target.dataset.color;
+                }
+            });
 
             customerDetailsContent.addEventListener('click', async (e) => {
                 if (e.target.id === 'save-customer-notes-btn') {
@@ -1175,7 +1300,7 @@
                 }
             });
 
-            addEventForm.addEventListener('submit', handleAddEvent);
+            eventForm.addEventListener('submit', handleEventFormSubmit);
             orderForm.addEventListener('submit', handleAddOrder);
 
             addCustomFieldBtn.addEventListener('click', () => {
@@ -1216,4 +1341,5 @@
     </script>
 </body>
 </html>
+
 
