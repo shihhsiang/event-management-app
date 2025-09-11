@@ -351,6 +351,23 @@
             </form>
         </div>
     </div>
+    
+    <!-- OOO Details & Remove Modal -->
+    <div id="ooo-details-modal" class="hidden modal-backdrop">
+        <div class="modal-content bg-white w-11/12 md:max-w-md mx-auto rounded-lg shadow-xl p-6">
+             <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">移除休假標記</h3>
+                <button id="close-ooo-details-modal" class="text-gray-500 hover:text-gray-800 text-2xl leading-none">&times;</button>
+            </div>
+            <div id="ooo-details-content" class="space-y-4">
+                <!-- Details will be injected here -->
+            </div>
+            <div class="mt-6 flex justify-end space-x-3">
+                 <button type="button" id="cancel-ooo-remove-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300">取消</button>
+                 <button type="button" id="confirm-ooo-remove-btn" class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700">移除標記</button>
+            </div>
+        </div>
+    </div>
 
 
     <!-- Firebase SDKs -->
@@ -430,6 +447,11 @@
         const batchImportForm = document.getElementById('batch-import-form');
         const batchEventSelect = document.getElementById('batch-event-select');
         const batchDataTextarea = document.getElementById('batch-data-textarea');
+        const oooDetailsModal = document.getElementById('ooo-details-modal');
+        const closeOooDetailsModalBtn = document.getElementById('close-ooo-details-modal');
+        const oooDetailsContent = document.getElementById('ooo-details-content');
+        const cancelOooRemoveBtn = document.getElementById('cancel-ooo-remove-btn');
+        const confirmOooRemoveBtn = document.getElementById('confirm-ooo-remove-btn');
 
 
         // --- Firebase 設定 ---
@@ -551,7 +573,11 @@
                     dateActionModal.classList.remove('hidden');
                 },
                 eventClick: function(info) {
-                    if (info.event.extendedProps.type === 'ooo') return; // Ignore clicks on OOO events
+                    if (info.event.extendedProps.type === 'ooo') {
+                        const oooId = info.event.id.replace('ooo-', '');
+                        showOooDetails(oooId);
+                        return;
+                    }
 
                     const eventId = info.event.id;
                     const eventDate = info.event.startStr;
@@ -741,7 +767,7 @@
                 allDay: true,
                 backgroundColor: '#d1d5db',
                 borderColor: '#9ca3af',
-                classNames: ['text-gray-700', 'cursor-not-allowed'],
+                classNames: ['text-gray-700'],
                 editable: false,
                 extendedProps: { type: 'ooo', order: 2 } // Custom property for sorting
             }));
@@ -979,6 +1005,17 @@
                 console.error("讀取報名資料失敗:", error);
                 registrationsListDiv.innerHTML = '<p class="text-center text-red-500">讀取資料失敗。</p>';
             }
+        }
+
+        function showOooDetails(oooId) {
+            const oooEntry = oooDaysData.find(o => o.id === oooId);
+            if (!oooEntry) return;
+
+            oooDetailsContent.innerHTML = `
+                <p>您確定要移除講師 <strong class="text-blue-600">${oooEntry.instructorName}</strong> 在 <strong class="text-blue-600">${oooEntry.date}</strong> 的休假標記嗎？</p>
+            `;
+            confirmOooRemoveBtn.dataset.oooId = oooId; // Pass the ID to the button
+            oooDetailsModal.classList.remove('hidden');
         }
         
         async function handleEventFormSubmit(e) {
@@ -1632,6 +1669,22 @@
                     alert(`批次匯入失敗: ${error.message}`);
                 }
             });
+            
+            // --- OOO Details Modal Listeners ---
+            closeOooDetailsModalBtn.addEventListener('click', () => oooDetailsModal.classList.add('hidden'));
+            cancelOooRemoveBtn.addEventListener('click', () => oooDetailsModal.classList.add('hidden'));
+            confirmOooRemoveBtn.addEventListener('click', async () => {
+                const oooId = confirmOooRemoveBtn.dataset.oooId;
+                if (oooId) {
+                    try {
+                        await deleteDoc(doc(oooDaysCollection, oooId));
+                        oooDetailsModal.classList.add('hidden');
+                    } catch (error) {
+                        console.error("移除OOO標記失敗:", error);
+                        alert("移除失敗，請稍後再試。");
+                    }
+                }
+            });
 
 
 
@@ -1665,6 +1718,7 @@
                     displayDiv.classList.add('hidden');
                     formDiv.classList.remove('hidden');
                     e.target.classList.add('hidden');
+                    customerDetailsContent.querySelector('#delete-customer-btn').classList.add('hidden');
                 }
 
                 if (e.target.id === 'cancel-customer-edit-btn') {
@@ -1673,6 +1727,7 @@
                     displayDiv.classList.remove('hidden');
                     formDiv.classList.add('hidden');
                     customerDetailsContent.querySelector('#edit-customer-btn').classList.remove('hidden');
+                     customerDetailsContent.querySelector('#delete-customer-btn').classList.remove('hidden');
                 }
 
                  if (e.target.id === 'delete-customer-btn') {
@@ -1734,6 +1789,7 @@
                         displayDiv.classList.remove('hidden');
                         form.classList.add('hidden');
                         customerDetailsContent.querySelector('#edit-customer-btn').classList.remove('hidden');
+                        customerDetailsContent.querySelector('#delete-customer-btn').classList.remove('hidden');
 
                     } catch (error) {
                         console.error("更新客戶資料失敗:", error);
