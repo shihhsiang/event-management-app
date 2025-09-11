@@ -369,6 +369,56 @@
         </div>
     </div>
 
+    <!-- 編輯訂單 Modal -->
+    <div id="edit-registration-modal" class="hidden modal-backdrop">
+         <div class="modal-content bg-white w-11/12 md:max-w-xl mx-auto rounded-lg shadow-xl p-6">
+             <h3 class="text-xl font-bold mb-4">編輯報名訂單</h3>
+             <form id="edit-registration-form" class="space-y-4 max-h-[80vh] overflow-y-auto p-2">
+                <input type="hidden" id="edit-registration-id">
+                 <div class="relative">
+                    <label for="edit-event-search-input" class="block text-sm font-medium text-gray-700">更換活動</label>
+                    <input type="text" id="edit-event-search-input" placeholder="點擊或輸入關鍵字搜尋活動..." class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md cursor-pointer" readonly>
+                     <input type="hidden" id="edit-event-select-hidden" name="eventId">
+                    <div id="edit-event-dropdown-list" class="hidden absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                        <!-- Grouped event list for editing -->
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="edit-customer-name" class="block text-sm font-medium text-gray-700">報名者姓名</label>
+                        <input type="text" id="edit-customer-name" name="customerName" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="edit-customer-phone" class="block text-sm font-medium text-gray-700">聯絡電話</label>
+                        <input type="tel" id="edit-customer-phone" name="customerPhone" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                </div>
+                 <!-- Additional fields can be added here if needed -->
+
+                <!-- 報名來源 -->
+                <div class="space-y-2 border-t pt-4">
+                    <label class="block text-sm font-medium text-gray-700">報名來源 (可複選)</label>
+                    <div id="edit-registration-source-container" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        <!-- Edit source checkboxes -->
+                    </div>
+                </div>
+
+                <!-- 自訂欄位容器 -->
+                <div id="edit-custom-fields-container" class="space-y-4 border-t pt-4">
+                    <!-- Edit custom fields -->
+                </div>
+
+                <div class="mt-6 flex justify-between items-center">
+                    <button type="button" id="delete-registration-btn" class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700">取消此筆報名</button>
+                    <div class="flex space-x-3">
+                        <button type="button" id="cancel-edit-registration-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300">取消</button>
+                        <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">儲存變更</button>
+                    </div>
+                </div>
+             </form>
+         </div>
+    </div>
+
 
     <!-- Firebase SDKs -->
     <script type="module">
@@ -452,6 +502,10 @@
         const oooDetailsContent = document.getElementById('ooo-details-content');
         const cancelOooRemoveBtn = document.getElementById('cancel-ooo-remove-btn');
         const confirmOooRemoveBtn = document.getElementById('confirm-ooo-remove-btn');
+        const editRegistrationModal = document.getElementById('edit-registration-modal');
+        const editRegistrationForm = document.getElementById('edit-registration-form');
+        const cancelEditRegistrationBtn = document.getElementById('cancel-edit-registration-btn');
+        const deleteRegistrationBtn = document.getElementById('delete-registration-btn');
 
 
         // --- Firebase 設定 ---
@@ -600,7 +654,7 @@
             onSnapshot(query(eventsCollection), (snapshot) => {
                 eventsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 updateCalendarDisplay();
-                updateOrderFormDropdown();
+                updateOrderFormDropdown(eventSearchInput.value, eventSearchInput, eventSelectHidden, eventDropdownList);
             });
 
             onSnapshot(query(registrationsCollection), (snapshot) => {
@@ -776,13 +830,13 @@
             calendar.addEventSource([...eventsWithCounts, ...oooEvents]);
         }
 
-        function updateOrderFormDropdown(searchTerm = '') {
-             const currentEventId = eventSelectHidden.value;
-             eventDropdownList.innerHTML = '';
+        function updateOrderFormDropdown(searchTerm = '', targetInput, targetHidden, targetDropdown) {
+             const currentEventId = targetHidden.value;
+             targetDropdown.innerHTML = '';
              let hasVisibleEvents = false;
              
              if (eventsData.length === 0) {
-                eventDropdownList.innerHTML = '<div class="px-3 py-2 text-gray-500">尚無活動可選擇</div>';
+                targetDropdown.innerHTML = '<div class="px-3 py-2 text-gray-500">尚無活動可選擇</div>';
                 return;
              }
 
@@ -814,7 +868,7 @@
                     const groupHeader = document.createElement('div');
                     groupHeader.className = 'px-3 py-2 bg-gray-100 text-sm font-bold text-gray-600 sticky top-0';
                     groupHeader.textContent = `${year}年 ${month}月`;
-                    eventDropdownList.appendChild(groupHeader);
+                    targetDropdown.appendChild(groupHeader);
 
                     eventsInMonth.forEach(event => {
                         const item = document.createElement('div');
@@ -822,19 +876,19 @@
                         item.textContent = `${event.date.substring(5)} - ${event.title}`;
                         item.dataset.eventId = event.id;
                         item.dataset.eventText = `${event.date} - ${event.title}`;
-                        eventDropdownList.appendChild(item);
+                        targetDropdown.appendChild(item);
                     });
                  }
              });
              
              if (!hasVisibleEvents) {
-                eventDropdownList.innerHTML = '<div class="px-3 py-2 text-gray-500">找不到符合的活動</div>';
+                targetDropdown.innerHTML = '<div class="px-3 py-2 text-gray-500">找不到符合的活動</div>';
              }
 
               if (currentEventId) {
                 const selectedEvent = eventsData.find(e => e.id === currentEventId);
                 if (selectedEvent) {
-                    eventSearchInput.value = `${selectedEvent.date} - ${selectedEvent.title}`;
+                    targetInput.value = `${selectedEvent.date} - ${selectedEvent.title}`;
                 }
              }
         }
@@ -969,7 +1023,8 @@
                         }
 
                         const itemHtml = `
-                            <li class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                            <li class="p-4 bg-gray-50 rounded-lg border border-gray-200 relative">
+                                <button class="edit-registration-btn absolute top-2 right-2 text-xs text-blue-600 hover:underline" data-reg-id="${doc.id}">編輯</button>
                                 <div class="flex items-start space-x-4">
                                     <input type="checkbox" data-doc-id="${doc.id}" class="check-in-box h-6 w-6 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-1 flex-shrink-0" ${data.isCheckedIn ? 'checked' : ''}>
                                     <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
@@ -1017,6 +1072,62 @@
             confirmOooRemoveBtn.dataset.oooId = oooId; // Pass the ID to the button
             oooDetailsModal.classList.remove('hidden');
         }
+
+        async function openEditRegistrationModal(regId) {
+            const registration = registrationsData.find(r => r.id === regId);
+            if(!registration) {
+                alert("找不到此筆報名資料！");
+                return;
+            }
+
+            const form = editRegistrationForm;
+            form.reset();
+            form.querySelector('#edit-registration-id').value = regId;
+
+            // Populate event
+            const eventInput = form.querySelector('#edit-event-search-input');
+            const eventHidden = form.querySelector('#edit-event-select-hidden');
+            const eventDropdown = form.querySelector('#edit-event-dropdown-list');
+            updateOrderFormDropdown('', eventInput, eventHidden, eventDropdown);
+            eventHidden.value = registration.eventId;
+            const currentEvent = eventsData.find(e => e.id === registration.eventId);
+            if (currentEvent) {
+                eventInput.value = `${currentEvent.date} - ${currentEvent.title}`;
+            }
+
+            // Populate customer details
+            form.elements['customerName'].value = registration.customerName || '';
+            form.elements['customerPhone'].value = registration.customerPhone || '';
+            // Note: This form doesn't include all customer fields, just basic ones for order context.
+
+            // Populate sources
+            const sourceContainer = form.querySelector('#edit-registration-source-container');
+            sourceContainer.innerHTML = registrationSourcesData.map(source => `
+                <div class="flex items-center">
+                    <input id="edit-source-${source.id}" name="sources" value="${source.name}" type="checkbox" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" ${registration.sources?.includes(source.name) ? 'checked' : ''}>
+                    <label for="edit-source-${source.id}" class="ml-2 block text-sm text-gray-900">${source.name}</label>
+                </div>
+            `).join('');
+
+
+            // Populate custom fields
+            const customContainer = form.querySelector('#edit-custom-fields-container');
+            customContainer.innerHTML = ''; // Clear previous
+            if(registration.customFields) {
+                 for (const [key, value] of Object.entries(registration.customFields)) {
+                    const newField = document.createElement('div');
+                    newField.className = 'grid grid-cols-10 gap-2 items-center';
+                    newField.innerHTML = `
+                        <div class="col-span-4"><input type="text" value="${key}" class="w-full bg-gray-100 p-2 text-sm rounded-md" readonly></div>
+                        <div class="col-span-6"><input type="text" name="custom_value_${key}" value="${value}" class="w-full p-2 border border-gray-300 text-sm rounded-md"></div>
+                    `;
+                    customContainer.appendChild(newField);
+                }
+            }
+
+            editRegistrationModal.classList.remove('hidden');
+        }
+
         
         async function handleEventFormSubmit(e) {
             e.preventDefault();
@@ -1127,6 +1238,35 @@
                 console.error("新增訂單失敗:", error);
             }
         }
+
+        async function handleEditRegistrationForm(e) {
+            e.preventDefault();
+            const form = e.target;
+            const regId = form.querySelector('#edit-registration-id').value;
+            if (!regId) return;
+
+            const updatedData = {
+                eventId: form.elements.eventId.value,
+                customerName: form.elements.customerName.value,
+                customerPhone: form.elements.customerPhone.value,
+                sources: Array.from(form.querySelectorAll('input[name="sources"]:checked')).map(cb => cb.value),
+                customFields: {}
+            };
+            
+            form.querySelectorAll('[name^="custom_value_"]').forEach(input => {
+                const key = input.name.replace('custom_value_', '');
+                updatedData.customFields[key] = input.value;
+            });
+
+            try {
+                const regRef = doc(registrationsCollection, regId);
+                await updateDoc(regRef, updatedData);
+                editRegistrationModal.classList.add('hidden');
+            } catch (error) {
+                console.error("更新訂單失敗:", error);
+                alert("更新訂單失敗！");
+            }
+        }
         
         // --- Helper: 匯出 CSV ---
         function exportToCsv(filename, rows) {
@@ -1208,31 +1348,38 @@
                 setActiveButton(showCustomerBtn);
             });
 
-            // --- Event Search Dropdown Logic ---
-            eventSearchInput.addEventListener('click', () => {
-                eventDropdownList.classList.toggle('hidden');
-                if(!eventDropdownList.classList.contains('hidden')) {
-                     eventSearchInput.removeAttribute('readonly');
-                     eventSearchInput.value = ''; // Clear on open
-                     updateOrderFormDropdown(''); // Show all
-                } else {
-                     eventSearchInput.setAttribute('readonly', true);
-                }
-            });
+            // --- Event Search Dropdown Logic (for both forms) ---
+            function setupEventSearch(searchInput, hiddenInput, dropdown) {
+                searchInput.addEventListener('click', () => {
+                    dropdown.classList.toggle('hidden');
+                    if (!dropdown.classList.contains('hidden')) {
+                        searchInput.removeAttribute('readonly');
+                        searchInput.value = '';
+                        updateOrderFormDropdown('', searchInput, hiddenInput, dropdown);
+                    } else {
+                        searchInput.setAttribute('readonly', true);
+                    }
+                });
+                searchInput.addEventListener('input', () => {
+                    updateOrderFormDropdown(searchInput.value, searchInput, hiddenInput, dropdown);
+                });
+                dropdown.addEventListener('click', (e) => {
+                    const target = e.target.closest('[data-event-id]');
+                    if (target) {
+                        hiddenInput.value = target.dataset.eventId;
+                        searchInput.value = target.dataset.eventText;
+                        dropdown.classList.add('hidden');
+                        searchInput.setAttribute('readonly', true);
+                    }
+                });
+            }
 
-             eventSearchInput.addEventListener('input', () => {
-                updateOrderFormDropdown(eventSearchInput.value);
-            });
+            setupEventSearch(eventSearchInput, eventSelectHidden, eventDropdownList);
+            const editEventSearchInput = document.getElementById('edit-event-search-input');
+            const editEventSelectHidden = document.getElementById('edit-event-select-hidden');
+            const editEventDropdownList = document.getElementById('edit-event-dropdown-list');
+            setupEventSearch(editEventSearchInput, editEventSelectHidden, editEventDropdownList);
 
-            eventDropdownList.addEventListener('click', (e) => {
-                const target = e.target.closest('[data-event-id]');
-                if(target) {
-                    eventSelectHidden.value = target.dataset.eventId;
-                    eventSearchInput.value = target.dataset.eventText;
-                    eventDropdownList.classList.add('hidden');
-                    eventSearchInput.setAttribute('readonly', true);
-                }
-            });
 
             // --- 自動完成搜尋功能 ---
             customerNameInput.addEventListener('input', () => {
@@ -1290,6 +1437,10 @@
                 if (!eventSearchInput.contains(e.target) && !eventDropdownList.contains(e.target)) {
                     eventDropdownList.classList.add('hidden');
                     eventSearchInput.setAttribute('readonly', true);
+                }
+                if (editEventSearchInput && !editEventSearchInput.contains(e.target) && editEventDropdownList && !editEventDropdownList.contains(e.target)) {
+                    editEventDropdownList.classList.add('hidden');
+                    editEventSearchInput.setAttribute('readonly', true);
                 }
             });
 
@@ -1686,6 +1837,49 @@
                 }
             });
 
+            // --- 編輯訂單 Modal ---
+            registrationsListDiv.addEventListener('click', (e) => {
+                if (e.target.classList.contains('edit-registration-btn')) {
+                    const regId = e.target.dataset.regId;
+                    openEditRegistrationModal(regId);
+                }
+            });
+            cancelEditRegistrationBtn.addEventListener('click', () => editRegistrationModal.classList.add('hidden'));
+            editRegistrationForm.addEventListener('submit', handleEditRegistrationForm);
+            deleteRegistrationBtn.addEventListener('click', async () => {
+                const regId = editRegistrationForm.querySelector('#edit-registration-id').value;
+                if (!regId) return;
+
+                const btn = deleteRegistrationBtn;
+                if (btn.dataset.confirm === 'true') {
+                    try {
+                        await deleteDoc(doc(registrationsCollection, regId));
+                        editRegistrationModal.classList.add('hidden');
+                    } catch (error) {
+                        console.error("取消報名失敗:", error);
+                    } finally {
+                        if (btn.timeoutId) clearTimeout(btn.timeoutId);
+                        btn.textContent = '取消此筆報名';
+                        btn.classList.replace('bg-yellow-500', 'bg-red-600');
+                        btn.classList.replace('text-black', 'text-white');
+                        delete btn.dataset.confirm;
+                    }
+                } else {
+                    btn.dataset.confirm = 'true';
+                    btn.textContent = '確認取消？';
+                    btn.classList.replace('bg-red-600', 'bg-yellow-500');
+                    btn.classList.replace('text-white', 'text-black');
+
+                    btn.timeoutId = setTimeout(() => {
+                        if (btn.dataset.confirm === 'true') {
+                           btn.textContent = '取消此筆報名';
+                           btn.classList.replace('bg-yellow-500', 'bg-red-600');
+                           btn.classList.replace('text-black', 'text-white');
+                           delete btn.dataset.confirm;
+                        }
+                    }, 3000);
+                }
+            });
 
 
             colorPaletteContainer.addEventListener('click', (e) => {
