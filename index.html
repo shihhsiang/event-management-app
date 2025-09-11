@@ -94,13 +94,18 @@
 
         <!-- 訂單匯入視圖 -->
         <main id="order-view" class="hidden bg-white p-6 rounded-lg shadow">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4">新增報名訂單</h2>
+            <div class="flex justify-between items-center mb-6">
+                 <h2 class="text-2xl font-bold text-gray-800">新增報名訂單</h2>
+                 <button id="batch-import-btn" class="px-4 py-2 text-sm font-semibold text-white bg-indigo-500 rounded-md hover:bg-indigo-600">批次匯入訂單</button>
+            </div>
             <form id="order-form" class="space-y-4">
-                <div>
-                    <label for="event-select" class="block text-sm font-medium text-gray-700">選擇活動</label>
-                    <select id="event-select" name="eventId" required class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
-                        <option value="">請先選擇一個活動</option>
-                    </select>
+                <div class="relative">
+                    <label for="event-search-input" class="block text-sm font-medium text-gray-700">選擇活動</label>
+                    <input type="text" id="event-search-input" placeholder="點擊或輸入關鍵字搜尋活動..." class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md cursor-pointer" readonly>
+                     <input type="hidden" id="event-select-hidden" name="eventId">
+                    <div id="event-dropdown-list" class="hidden absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-72 overflow-y-auto">
+                        <!-- Grouped event list will be injected here -->
+                    </div>
                 </div>
                 <div>
                     <label for="customer-name" class="block text-sm font-medium text-gray-700">報名者姓名 (可搜尋舊客)</label>
@@ -314,6 +319,38 @@
             </div>
         </div>
     </div>
+    
+    <!-- 批次匯入 Modal -->
+    <div id="batch-import-modal" class="hidden modal-backdrop">
+        <div class="modal-content bg-white w-11/12 md:max-w-2xl mx-auto rounded-lg shadow-xl p-6">
+             <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">批次匯入訂單</h3>
+                <button id="close-batch-import-modal" class="text-gray-500 hover:text-gray-800 text-2xl leading-none">&times;</button>
+            </div>
+            <form id="batch-import-form">
+                <div class="space-y-4">
+                    <div>
+                        <label for="batch-event-select" class="block text-sm font-medium text-gray-700">選擇要匯入的活動</label>
+                        <select id="batch-event-select" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            <!-- Event options will be injected here -->
+                        </select>
+                    </div>
+                    <div>
+                        <label for="batch-data-textarea" class="block text-sm font-medium text-gray-700">貼上訂單資料</label>
+                        <p class="text-xs text-gray-500 mb-2">請從 Excel 或 Google Sheets 複製資料，並確保欄位順序正確。每一行代表一筆訂單，欄位間請用 Tab 分隔。</p>
+                        <div class="p-2 bg-gray-100 rounded text-xs text-gray-600">
+                            <strong>格式:</strong> 姓名(Tab)電話(Tab)Email(Tab)身分證(Tab)生日(YYYY-MM-DD)(Tab)職業
+                        </div>
+                        <textarea id="batch-data-textarea" rows="10" required class="mt-2 block w-full border border-gray-300 rounded-md shadow-sm p-2 font-mono text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="王小明	0912345678	ming@example.com..."></textarea>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button type="button" id="cancel-batch-import-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300">取消</button>
+                    <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">開始匯入</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
 
     <!-- Firebase SDKs -->
@@ -339,7 +376,9 @@
         const eventModalTitle = document.getElementById('event-modal-title');
         const deleteEventBtn = document.getElementById('delete-event-btn');
         const orderForm = document.getElementById('order-form');
-        const eventSelect = document.getElementById('event-select');
+        const eventSelectHidden = document.getElementById('event-select-hidden');
+        const eventSearchInput = document.getElementById('event-search-input');
+        const eventDropdownList = document.getElementById('event-dropdown-list');
         const viewRegistrationsModal = document.getElementById('view-registrations-modal');
         const closeRegistrationsModalBtn = document.getElementById('close-registrations-modal');
         const registrationsListDiv = document.getElementById('registrations-list');
@@ -384,6 +423,14 @@
         const dateActionAddEventBtn = document.getElementById('date-action-add-event');
         const dateActionMarkOooBtn = document.getElementById('date-action-mark-ooo');
         const dateActionCancelBtn = document.getElementById('date-action-cancel');
+        const batchImportBtn = document.getElementById('batch-import-btn');
+        const batchImportModal = document.getElementById('batch-import-modal');
+        const closeBatchImportModalBtn = document.getElementById('close-batch-import-modal');
+        const cancelBatchImportBtn = document.getElementById('cancel-batch-import-btn');
+        const batchImportForm = document.getElementById('batch-import-form');
+        const batchEventSelect = document.getElementById('batch-event-select');
+        const batchDataTextarea = document.getElementById('batch-data-textarea');
+
 
         // --- Firebase 設定 ---
         let db, auth;
@@ -497,7 +544,7 @@
                     week: '週',
                     day: '日'
                 },
-                eventOrder: 'type', // NEW: Sort events, putting 'ooo' type last
+                eventOrder: 'order', // NEW: Sort events based on a custom property
                 dateClick: function(info) {
                     selectedDate = info.dateStr;
                     dateActionTitle.textContent = selectedDate;
@@ -624,6 +671,17 @@
             eventInstructorSelect.innerHTML = `<option value="">無</option>${optionsHtml}`;
             oooInstructorSelect.innerHTML = `<option value="">請選擇</option>${optionsHtml}`;
         }
+        
+        function renderBatchEventSelect() {
+            batchEventSelect.innerHTML = '<option value="">請先選擇一個活動</option>';
+            const sortedEvents = [...eventsData].sort((a, b) => new Date(a.date) - new Date(b.date));
+            sortedEvents.forEach(event => {
+                const option = document.createElement('option');
+                option.value = event.id;
+                option.textContent = `${event.date} - ${event.title}`;
+                batchEventSelect.appendChild(option);
+            });
+        }
 
 
         function renderCustomerList() {
@@ -672,7 +730,7 @@
                     allDay: true,
                     backgroundColor: event.color || '#3b82f6', 
                     borderColor: event.color || '#3b82f6',
-                    extendedProps: { type: 'activity' } // Custom property for sorting
+                    extendedProps: { type: 'activity', order: 1 } // Custom property for sorting
                 };
             });
             
@@ -685,30 +743,73 @@
                 borderColor: '#9ca3af',
                 classNames: ['text-gray-700', 'cursor-not-allowed'],
                 editable: false,
-                extendedProps: { type: 'ooo' } // Custom property for sorting
+                extendedProps: { type: 'ooo', order: 2 } // Custom property for sorting
             }));
             
             calendar.removeAllEvents();
             calendar.addEventSource([...eventsWithCounts, ...oooEvents]);
         }
 
-        function updateOrderFormDropdown() {
-             const currentEventId = eventSelect.value;
-             eventSelect.innerHTML = '<option value="">請先選擇一個活動</option>';
-             let currentEventExists = false;
+        function updateOrderFormDropdown(searchTerm = '') {
+             const currentEventId = eventSelectHidden.value;
+             eventDropdownList.innerHTML = '';
+             let hasVisibleEvents = false;
+             
+             if (eventsData.length === 0) {
+                eventDropdownList.innerHTML = '<div class="px-3 py-2 text-gray-500">尚無活動可選擇</div>';
+                return;
+             }
+
              const sortedEvents = [...eventsData].sort((a, b) => new Date(a.date) - new Date(b.date));
-             sortedEvents.forEach(event => {
-                 const option = document.createElement('option');
-                 option.value = event.id;
-                 option.textContent = `${event.date} - ${event.title}`;
-                 if (event.id === currentEventId) {
-                     option.selected = true;
-                     currentEventExists = true;
+             
+             const groupedEvents = sortedEvents.reduce((acc, event) => {
+                 const monthKey = event.date.substring(0, 7); // YYYY-MM
+                 if (!acc[monthKey]) {
+                     acc[monthKey] = [];
                  }
-                 eventSelect.appendChild(option);
+                 acc[monthKey].push(event);
+                 return acc;
+             }, {});
+
+            const searchTermLower = searchTerm.toLowerCase();
+
+             Object.keys(groupedEvents).sort().forEach(monthKey => {
+                 const eventsInMonth = groupedEvents[monthKey].filter(event => {
+                     const eventText = `${event.date} - ${event.title} ${event.instructor || ''}`.toLowerCase();
+                     return eventText.includes(searchTermLower);
+                 });
+
+                 if (eventsInMonth.length > 0) {
+                    hasVisibleEvents = true;
+                    const date = new Date(`${monthKey}-01`);
+                    const year = date.getFullYear();
+                    const month = date.getMonth() + 1;
+                    
+                    const groupHeader = document.createElement('div');
+                    groupHeader.className = 'px-3 py-2 bg-gray-100 text-sm font-bold text-gray-600 sticky top-0';
+                    groupHeader.textContent = `${year}年 ${month}月`;
+                    eventDropdownList.appendChild(groupHeader);
+
+                    eventsInMonth.forEach(event => {
+                        const item = document.createElement('div');
+                        item.className = 'px-3 py-2 hover:bg-blue-100 cursor-pointer';
+                        item.textContent = `${event.date.substring(5)} - ${event.title}`;
+                        item.dataset.eventId = event.id;
+                        item.dataset.eventText = `${event.date} - ${event.title}`;
+                        eventDropdownList.appendChild(item);
+                    });
+                 }
              });
-              if (currentEventId && currentEventExists) {
-                 eventSelect.value = currentEventId;
+             
+             if (!hasVisibleEvents) {
+                eventDropdownList.innerHTML = '<div class="px-3 py-2 text-gray-500">找不到符合的活動</div>';
+             }
+
+              if (currentEventId) {
+                const selectedEvent = eventsData.find(e => e.id === currentEventId);
+                if (selectedEvent) {
+                    eventSearchInput.value = `${selectedEvent.date} - ${selectedEvent.title}`;
+                }
              }
         }
         
@@ -739,7 +840,10 @@
                     <div>
                         <div class="flex justify-between items-center mb-2">
                              <h4 class="text-lg font-bold">基本資料</h4>
-                             <button id="edit-customer-btn" data-customer-id="${customerId}" class="text-sm text-blue-600 hover:underline px-3 py-1">編輯</button>
+                             <div class="flex items-center space-x-4">
+                                <button id="edit-customer-btn" data-customer-id="${customerId}" class="text-sm text-blue-600 hover:underline px-3 py-1">編輯</button>
+                                <button id="delete-customer-btn" data-customer-id="${customerId}" class="text-sm text-red-600 hover:underline px-3 py-1">刪除客戶</button>
+                             </div>
                         </div>
                         
                         <!-- Display View -->
@@ -910,7 +1014,10 @@
             const formData = new FormData(orderForm);
             const data = Object.fromEntries(formData.entries());
 
-            if (!data.eventId) { return; }
+            if (!data.eventId) { 
+                alert("請先選擇一個活動！");
+                return; 
+            }
             
             let customerId;
             const phone = data.customerPhone.trim();
@@ -975,6 +1082,8 @@
                     createdAt: new Date()
                 });
                 orderForm.reset();
+                eventSearchInput.value = ''; // Clear search input
+                eventSelectHidden.value = '';
                 customFieldsContainer.innerHTML = '';
                 customerSuggestionsContainer.classList.add('hidden');
             } catch (error) {
@@ -1062,6 +1171,32 @@
                 setActiveButton(showCustomerBtn);
             });
 
+            // --- Event Search Dropdown Logic ---
+            eventSearchInput.addEventListener('click', () => {
+                eventDropdownList.classList.toggle('hidden');
+                if(!eventDropdownList.classList.contains('hidden')) {
+                     eventSearchInput.removeAttribute('readonly');
+                     eventSearchInput.value = ''; // Clear on open
+                     updateOrderFormDropdown(''); // Show all
+                } else {
+                     eventSearchInput.setAttribute('readonly', true);
+                }
+            });
+
+             eventSearchInput.addEventListener('input', () => {
+                updateOrderFormDropdown(eventSearchInput.value);
+            });
+
+            eventDropdownList.addEventListener('click', (e) => {
+                const target = e.target.closest('[data-event-id]');
+                if(target) {
+                    eventSelectHidden.value = target.dataset.eventId;
+                    eventSearchInput.value = target.dataset.eventText;
+                    eventDropdownList.classList.add('hidden');
+                    eventSearchInput.setAttribute('readonly', true);
+                }
+            });
+
             // --- 自動完成搜尋功能 ---
             customerNameInput.addEventListener('input', () => {
                 const searchTerm = customerNameInput.value.trim().toLowerCase();
@@ -1114,6 +1249,10 @@
             document.addEventListener('click', (e) => {
                 if (!customerNameInput.contains(e.target) && !customerSuggestionsContainer.contains(e.target)) {
                     customerSuggestionsContainer.classList.add('hidden');
+                }
+                if (!eventSearchInput.contains(e.target) && !eventDropdownList.contains(e.target)) {
+                    eventDropdownList.classList.add('hidden');
+                    eventSearchInput.setAttribute('readonly', true);
                 }
             });
 
@@ -1413,6 +1552,88 @@
                 }
             });
 
+            // --- 批次匯入 Modal ---
+            batchImportBtn.addEventListener('click', () => {
+                batchImportForm.reset();
+                renderBatchEventSelect();
+                batchImportModal.classList.remove('hidden');
+            });
+
+            closeBatchImportModalBtn.addEventListener('click', () => batchImportModal.classList.add('hidden'));
+            cancelBatchImportBtn.addEventListener('click', () => batchImportModal.classList.add('hidden'));
+
+            batchImportForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const eventId = batchEventSelect.value;
+                const data = batchDataTextarea.value.trim();
+
+                if (!eventId || !data) {
+                    alert("請選擇活動並貼上資料！");
+                    return;
+                }
+                
+                const lines = data.split('\n').filter(line => line.trim() !== '');
+                if(lines.length === 0) return;
+
+                const batch = writeBatch(db);
+
+                try {
+                    for (const line of lines) {
+                        const [name, phone, email, idNumber, dob, occupation] = line.split('\t');
+                        const trimmedPhone = phone ? phone.trim() : '';
+
+                        let customerId = null;
+
+                        if(trimmedPhone) {
+                            const q = query(customersCollection, where("primaryPhone", "==", trimmedPhone));
+                            const snapshot = await getDocs(q);
+                            if(snapshot.empty) {
+                                const newCustomerRef = doc(customersCollection);
+                                batch.set(newCustomerRef, {
+                                    primaryPhone: trimmedPhone,
+                                    customerName: name || '',
+                                    customerEmail: email || '',
+                                    customerIdNumber: idNumber || '',
+                                    customerDob: dob || '',
+                                    customerOccupation: occupation || '',
+                                    createdAt: serverTimestamp(),
+                                    lastUpdatedAt: serverTimestamp(),
+                                });
+                                customerId = newCustomerRef.id;
+                            } else {
+                                customerId = snapshot.docs[0].id;
+                            }
+                        }
+                        
+                        const registrationRef = doc(registrationsCollection);
+                        batch.set(registrationRef, {
+                            eventId: eventId,
+                            customerId: customerId,
+                            customerName: name || '',
+                            customerPhone: trimmedPhone,
+                            customerEmail: email || '',
+                            customerIdNumber: idNumber || '',
+                            customerDob: dob || '',
+                            customerOccupation: occupation || '',
+                            createdAt: new Date(),
+                            isCheckedIn: false,
+                            addonTransport: false,
+                            sources: ['batch_import'],
+                            customFields: {},
+                        });
+                    }
+
+                    await batch.commit();
+                    alert(`成功匯入 ${lines.length} 筆訂單！`);
+                    batchImportModal.classList.add('hidden');
+
+                } catch (error) {
+                    console.error("批次匯入失敗:", error);
+                    alert(`批次匯入失敗: ${error.message}`);
+                }
+            });
+
+
 
             colorPaletteContainer.addEventListener('click', (e) => {
                 if(e.target.dataset.color) {
@@ -1452,6 +1673,30 @@
                     displayDiv.classList.remove('hidden');
                     formDiv.classList.add('hidden');
                     customerDetailsContent.querySelector('#edit-customer-btn').classList.remove('hidden');
+                }
+
+                 if (e.target.id === 'delete-customer-btn') {
+                    const customerId = e.target.dataset.customerId;
+                    if (customerId && confirm('您確定要刪除這位客戶嗎？\n所有與此客戶相關的報名訂單紀錄將會被一併永久刪除！')) {
+                        try {
+                            const q = query(registrationsCollection, where("customerId", "==", customerId));
+                            const registrationsSnapshot = await getDocs(q);
+
+                            const batch = writeBatch(db);
+
+                            registrationsSnapshot.forEach(doc => {
+                                batch.delete(doc.ref);
+                            });
+
+                            batch.delete(doc(customersCollection, customerId));
+
+                            await batch.commit();
+                            customerDetailsModal.classList.add('hidden');
+                        } catch (error) {
+                             console.error("刪除客戶失敗:", error);
+                             alert("刪除客戶失敗，請稍後再試。");
+                        }
+                    }
                 }
             });
 
