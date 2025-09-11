@@ -85,7 +85,8 @@
 
         <!-- 月曆視圖 -->
         <main id="calendar-view" class="bg-white p-4 rounded-lg shadow">
-            <div class="flex justify-end space-x-2 mb-4">
+            <div class="flex flex-wrap justify-end gap-2 mb-4">
+                <button id="manage-instructors-btn" class="px-4 py-2 text-xs font-semibold text-gray-700 bg-yellow-100 rounded-md hover:bg-yellow-200 border border-yellow-200">管理講師</button>
                 <button id="export-month-btn" class="px-4 py-2 text-xs font-semibold text-gray-700 bg-green-100 rounded-md hover:bg-green-200 border border-green-200">匯出本月報名</button>
             </div>
             <div id='calendar'></div>
@@ -191,8 +192,11 @@
                     <input type="hidden" id="event-date">
                 </div>
                 <div>
-                    <label for="event-instructor" class="block text-sm font-medium text-gray-700">帶團講師 (選填)</label>
-                    <input type="text" id="event-instructor" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    <label for="event-instructor-select" class="block text-sm font-medium text-gray-700">帶團講師 (選填)</label>
+                    <select id="event-instructor-select" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">無</option>
+                        <!-- Instructor options will be injected here -->
+                    </select>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">活動顏色</label>
@@ -262,6 +266,55 @@
         </div>
     </div>
 
+    <!-- 管理講師 Modal -->
+    <div id="manage-instructors-modal" class="hidden modal-backdrop">
+        <div class="modal-content bg-white w-11/12 md:max-w-md mx-auto rounded-lg shadow-xl p-6">
+             <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">管理講師</h3>
+                <button id="close-instructors-modal" class="text-gray-500 hover:text-gray-800 text-2xl leading-none">&times;</button>
+            </div>
+            <div id="instructor-management-list" class="space-y-2 mb-4 max-h-60 overflow-y-auto">
+                <!-- 講師列表 -->
+            </div>
+            <form id="add-instructor-form" class="flex space-x-2">
+                <input type="text" id="new-instructor-name" placeholder="新增講師名稱..." class="flex-grow border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">新增</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 標註 OOO Modal -->
+    <div id="mark-ooo-modal" class="hidden modal-backdrop">
+        <div class="modal-content bg-white w-11/12 md:max-w-md mx-auto rounded-lg shadow-xl p-6">
+            <h3 class="text-xl font-bold mb-4">標註 Out of Office</h3>
+            <p class="text-sm text-gray-600 mb-4">為 <span id="ooo-date-display" class="font-semibold"></span> 標註休假講師</p>
+            <form id="ooo-form" class="space-y-4">
+                <div>
+                    <label for="ooo-instructor-select" class="block text-sm font-medium text-gray-700">選擇講師</label>
+                    <select id="ooo-instructor-select" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        <!-- Instructor options will be injected here -->
+                    </select>
+                </div>
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button type="button" id="cancel-ooo-form" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300">取消</button>
+                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">儲存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 日期點擊快捷選單 Modal -->
+    <div id="date-action-modal" class="hidden modal-backdrop">
+        <div class="modal-content bg-white w-11/12 md:max-w-xs mx-auto rounded-lg shadow-xl p-6">
+            <h3 class="text-lg font-bold mb-4" id="date-action-title"></h3>
+            <div class="space-y-3">
+                <button id="date-action-add-event" class="w-full text-left p-3 bg-blue-50 hover:bg-blue-100 rounded-md">📅 新增活動</button>
+                <button id="date-action-mark-ooo" class="w-full text-left p-3 bg-gray-50 hover:bg-gray-100 rounded-md">🏝️ 標註 OOO</button>
+                 <button id="date-action-cancel" class="w-full text-center text-sm p-2 text-gray-600 hover:bg-gray-100 rounded-md mt-2">取消</button>
+            </div>
+        </div>
+    </div>
+
 
     <!-- Firebase SDKs -->
     <script type="module">
@@ -312,13 +365,29 @@
         const newSourceNameInput = document.getElementById('new-source-name');
         const sourceManagementList = document.getElementById('source-management-list');
         const registrationSourceContainer = document.getElementById('registration-source-container');
-        const eventInstructorInput = document.getElementById('event-instructor');
+        const eventInstructorSelect = document.getElementById('event-instructor-select');
         const colorPaletteContainer = document.getElementById('color-palette');
         const eventColorInput = document.getElementById('event-color');
+        const manageInstructorsBtn = document.getElementById('manage-instructors-btn');
+        const manageInstructorsModal = document.getElementById('manage-instructors-modal');
+        const closeInstructorsModalBtn = document.getElementById('close-instructors-modal');
+        const instructorManagementList = document.getElementById('instructor-management-list');
+        const addInstructorForm = document.getElementById('add-instructor-form');
+        const newInstructorNameInput = document.getElementById('new-instructor-name');
+        const markOooModal = document.getElementById('mark-ooo-modal');
+        const oooForm = document.getElementById('ooo-form');
+        const cancelOooFormBtn = document.getElementById('cancel-ooo-form');
+        const oooInstructorSelect = document.getElementById('ooo-instructor-select');
+        const oooDateDisplay = document.getElementById('ooo-date-display');
+        const dateActionModal = document.getElementById('date-action-modal');
+        const dateActionTitle = document.getElementById('date-action-title');
+        const dateActionAddEventBtn = document.getElementById('date-action-add-event');
+        const dateActionMarkOooBtn = document.getElementById('date-action-mark-ooo');
+        const dateActionCancelBtn = document.getElementById('date-action-cancel');
 
         // --- Firebase 設定 ---
         let db, auth;
-        let eventsCollection, registrationsCollection, customersCollection, registrationSourcesCollection;
+        let eventsCollection, registrationsCollection, customersCollection, registrationSourcesCollection, instructorsCollection, oooDaysCollection;
         let calendar; // FullCalendar 實例
         let isAppInitialized = false; // Flag to prevent multiple initializations
         let unsubscribeRegistrations = null; // 用於取消報名列表的即時監聽
@@ -326,6 +395,9 @@
         let registrationsData = []; // 儲存報名資料
         let customersData = []; // 儲存客戶資料
         let registrationSourcesData = []; // 儲存報名來源選項
+        let instructorsData = []; // 儲存講師資料
+        let oooDaysData = []; // 儲存OOO資料
+        let selectedDate = null; // 儲存使用者點擊的日期
 
         const colorPalette = ['#3b82f6', '#10b981', '#ef4444', '#f97316', '#8b5cf6', '#ec4899']; // 預設顏色
 
@@ -398,12 +470,14 @@
             registrationsCollection = collection(db, "registrations");
             customersCollection = collection(db, "customers");
             registrationSourcesCollection = collection(db, "registrationSources");
+            instructorsCollection = collection(db, "instructors");
+            oooDaysCollection = collection(db, "oooDays");
 
             initializeCalendar();
             setupEventListeners();
             listenToData();
-            checkAndSeedInitialSources(); // 檢查並植入初始來源資料
-            renderColorPalette(); // 渲染顏色選擇器
+            checkAndSeedInitialSources(); 
+            renderColorPalette(); 
         }
 
         // --- 月曆初始化 ---
@@ -423,18 +497,15 @@
                     week: '週',
                     day: '日'
                 },
+                eventOrder: 'type', // NEW: Sort events, putting 'ooo' type last
                 dateClick: function(info) {
-                    eventForm.reset();
-                    eventModalTitle.textContent = "新增活動";
-                    eventIdInput.value = '';
-                    eventDateInput.value = info.dateStr;
-                    deleteEventBtn.classList.add('hidden');
-                    // Reset color selection to default
-                    eventColorInput.value = colorPalette[0];
-                    renderColorPalette();
-                    addEventModal.classList.remove('hidden');
+                    selectedDate = info.dateStr;
+                    dateActionTitle.textContent = selectedDate;
+                    dateActionModal.classList.remove('hidden');
                 },
                 eventClick: function(info) {
+                    if (info.event.extendedProps.type === 'ooo') return; // Ignore clicks on OOO events
+
                     const eventId = info.event.id;
                     const eventDate = info.event.startStr;
                     const event = eventsData.find(e => e.id === eventId);
@@ -444,7 +515,7 @@
                     // 將 eventId 和 date 附加到匯出按鈕上
                     exportEventBtn.dataset.eventId = eventId;
                     exportDayFromModalBtn.dataset.eventDate = eventDate;
-                    editEventBtn.dataset.eventId = eventId; // Pass eventId to edit button
+                    editEventBtn.dataset.eventId = eventId; 
                     showRegistrations(eventId, originalTitle, instructor);
                 }
             });
@@ -453,18 +524,18 @@
 
         // --- Firestore 資料監聽 ---
         function listenToData() {
-            onSnapshot(eventsCollection, (snapshot) => {
+            onSnapshot(query(eventsCollection), (snapshot) => {
                 eventsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 updateCalendarDisplay();
                 updateOrderFormDropdown();
             });
 
-            onSnapshot(registrationsCollection, (snapshot) => {
+            onSnapshot(query(registrationsCollection), (snapshot) => {
                 registrationsData = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
                 updateCalendarDisplay();
             });
 
-            onSnapshot(customersCollection, (snapshot) => {
+            onSnapshot(query(customersCollection), (snapshot) => {
                 customersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 renderCustomerList();
             });
@@ -472,6 +543,17 @@
             onSnapshot(query(registrationSourcesCollection), (snapshot) => {
                 registrationSourcesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 renderRegistrationSources();
+            });
+
+            onSnapshot(query(instructorsCollection), (snapshot) => {
+                instructorsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderInstructorsInModal();
+                renderInstructorDropdowns();
+            });
+            
+            onSnapshot(query(oooDaysCollection), (snapshot) => {
+                oooDaysData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                updateCalendarDisplay();
             });
         }
         
@@ -524,6 +606,25 @@
                 </div>
             `).join('');
         }
+        
+        function renderInstructorsInModal() {
+            instructorManagementList.innerHTML = instructorsData.map(instructor => `
+                <div class="flex items-center justify-between p-2 bg-gray-100 rounded-md">
+                    <span>${instructor.name}</span>
+                    <div class="space-x-2">
+                         <button class="edit-instructor-btn text-xs text-blue-500 hover:underline" data-id="${instructor.id}" data-name="${instructor.name}">編輯</button>
+                         <button class="delete-instructor-btn text-xs text-red-500 hover:underline" data-id="${instructor.id}">刪除</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderInstructorDropdowns() {
+            const optionsHtml = instructorsData.map(i => `<option value="${i.name}">${i.name}</option>`).join('');
+            eventInstructorSelect.innerHTML = `<option value="">無</option>${optionsHtml}`;
+            oooInstructorSelect.innerHTML = `<option value="">請選擇</option>${optionsHtml}`;
+        }
+
 
         function renderCustomerList() {
             const searchTerm = customerSearchInput.value.toLowerCase();
@@ -560,6 +661,7 @@
                 }
                 return acc;
             }, {});
+
             const eventsWithCounts = eventsData.map(event => {
                 const count = registrationCounts[event.id] || 0;
                 const displayTitle = event.instructor ? `[${event.instructor}] ${event.title} (${count}人)` : `${event.title} (${count}人)`;
@@ -568,12 +670,26 @@
                     title: displayTitle,
                     start: event.date,
                     allDay: true,
-                    backgroundColor: event.color || '#3b82f6', // Use saved color with fallback
-                    borderColor: event.color || '#3b82f6' // Also for border
+                    backgroundColor: event.color || '#3b82f6', 
+                    borderColor: event.color || '#3b82f6',
+                    extendedProps: { type: 'activity' } // Custom property for sorting
                 };
             });
+            
+            const oooEvents = oooDaysData.map(day => ({
+                id: `ooo-${day.id}`,
+                title: `休息: ${day.instructorName}`,
+                start: day.date,
+                allDay: true,
+                backgroundColor: '#d1d5db',
+                borderColor: '#9ca3af',
+                classNames: ['text-gray-700', 'cursor-not-allowed'],
+                editable: false,
+                extendedProps: { type: 'ooo' } // Custom property for sorting
+            }));
+            
             calendar.removeAllEvents();
-            calendar.addEventSource(eventsWithCounts);
+            calendar.addEventSource([...eventsWithCounts, ...oooEvents]);
         }
 
         function updateOrderFormDropdown() {
@@ -766,7 +882,7 @@
             const eventId = eventIdInput.value;
             const title = eventTitleInput.value.trim();
             const date = eventDateInput.value;
-            const instructor = eventInstructorInput.value.trim();
+            const instructor = eventInstructorSelect.value;
             const color = eventColorInput.value;
 
             if (!title || !date) return;
@@ -1124,7 +1240,7 @@
                     eventIdInput.value = event.id;
                     eventDateInput.value = event.date;
                     eventTitleInput.value = event.title;
-                    eventInstructorInput.value = event.instructor || '';
+                    eventInstructorSelect.value = event.instructor || '';
                     eventColorInput.value = event.color || colorPalette[0];
                     deleteEventBtn.classList.remove('hidden');
                     renderColorPalette();
@@ -1217,6 +1333,86 @@
                     }
                 }
             });
+
+             // --- 講師管理 Modal ---
+            manageInstructorsBtn.addEventListener('click', () => manageInstructorsModal.classList.remove('hidden'));
+            closeInstructorsModalBtn.addEventListener('click', () => manageInstructorsModal.classList.add('hidden'));
+            
+            addInstructorForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const newName = newInstructorNameInput.value.trim();
+                if (newName) {
+                    try {
+                        await addDoc(instructorsCollection, { name: newName, createdAt: serverTimestamp() });
+                        newInstructorNameInput.value = '';
+                    } catch (error) {
+                        console.error("新增講師失敗:", error);
+                    }
+                }
+            });
+
+            instructorManagementList.addEventListener('click', async (e) => {
+                const target = e.target;
+                const id = target.dataset.id;
+                if(target.classList.contains('delete-instructor-btn')) {
+                    if (id && confirm('確定要刪除這位講師嗎？')) {
+                        try {
+                            await deleteDoc(doc(instructorsCollection, id));
+                        } catch (error) { console.error("刪除講師失敗:", error); }
+                    }
+                }
+                 if (target.classList.contains('edit-instructor-btn')) {
+                    const currentName = target.dataset.name;
+                    const newName = prompt('請輸入新的講師名稱:', currentName);
+                    if (newName && newName.trim() !== "" && newName.trim() !== currentName) {
+                        try {
+                            await updateDoc(doc(instructorsCollection, id), { name: newName.trim() });
+                        } catch (error) { console.error("編輯講師失敗:", error); }
+                    }
+                }
+            });
+            
+            // --- OOO Modal ---
+            dateActionAddEventBtn.addEventListener('click', () => {
+                dateActionModal.classList.add('hidden');
+                eventForm.reset();
+                eventModalTitle.textContent = "新增活動";
+                eventIdInput.value = '';
+                eventDateInput.value = selectedDate;
+                deleteEventBtn.classList.add('hidden');
+                eventColorInput.value = colorPalette[0];
+                renderColorPalette();
+                addEventModal.classList.remove('hidden');
+            });
+            
+            dateActionMarkOooBtn.addEventListener('click', () => {
+                dateActionModal.classList.add('hidden');
+                oooDateDisplay.textContent = selectedDate;
+                markOooModal.classList.remove('hidden');
+            });
+            
+            dateActionCancelBtn.addEventListener('click', () => {
+                 dateActionModal.classList.add('hidden');
+            });
+
+
+            cancelOooFormBtn.addEventListener('click', () => markOooModal.classList.add('hidden'));
+
+            oooForm.addEventListener('submit', async(e) => {
+                e.preventDefault();
+                const instructorName = oooInstructorSelect.value;
+                const date = selectedDate;
+                if(instructorName && date) {
+                    try {
+                        await addDoc(oooDaysCollection, { instructorName, date });
+                        oooForm.reset();
+                        markOooModal.classList.add('hidden');
+                    } catch (error) {
+                        console.error("儲存OOO日期失敗:", error);
+                    }
+                }
+            });
+
 
             colorPaletteContainer.addEventListener('click', (e) => {
                 if(e.target.dataset.color) {
@@ -1341,5 +1537,4 @@
     </script>
 </body>
 </html>
-
 
