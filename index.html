@@ -136,7 +136,30 @@
                     <label for="customer-occupation" class="block text-sm font-medium text-gray-700">職業 (選填)</label>
                     <input type="text" id="customer-occupation" name="customerOccupation" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                 </div>
-                <div class="flex items-start">
+                 <!-- NEW GUARDIAN SECTION -->
+                <div class="border-t pt-4 mt-4 space-y-4">
+                    <h4 class="text-sm font-semibold text-gray-600">法定代理人資料 (親子團適用)</h4>
+                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="guardian-name" class="block text-sm font-medium text-gray-700">姓名 (選填)</label>
+                            <input type="text" id="guardian-name" name="guardianName" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="guardian-id" class="block text-sm font-medium text-gray-700">身分證字號 (選填)</label>
+                            <input type="text" id="guardian-id" name="guardianIdNumber" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                         <div class="md:col-span-2">
+                            <label for="guardian-address" class="block text-sm font-medium text-gray-700">戶籍地址 (選填)</label>
+                            <input type="text" id="guardian-address" name="guardianAddress" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="guardian-dob" class="block text-sm font-medium text-gray-700">出生年月日 (選填)</label>
+                            <input type="date" id="guardian-dob" name="guardianDob" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-start border-t pt-4">
                     <div class="flex items-center h-5">
                         <input id="addon-transport" name="addonTransport" type="checkbox" class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded">
                     </div>
@@ -339,9 +362,9 @@
                         <label for="batch-data-textarea" class="block text-sm font-medium text-gray-700">貼上訂單資料</label>
                         <p class="text-xs text-gray-500 mb-2">請從 Excel 或 Google Sheets 複製資料，並確保欄位順序正確。每一行代表一筆訂單，欄位間請用 Tab 分隔。</p>
                         <div class="p-2 bg-gray-100 rounded text-xs text-gray-600">
-                            <strong>格式:</strong> 姓名(Tab)電話(Tab)Email(Tab)身分證(Tab)生日(YYYY-MM-DD)(Tab)職業
+                            <strong>格式:</strong> 姓名(Tab)電話(Tab)Email(Tab)身分證(Tab)生日(Tab)職業(Tab)代理人姓名(Tab)代理人身分證(Tab)代理人地址(Tab)代理人生日
                         </div>
-                        <textarea id="batch-data-textarea" rows="10" required class="mt-2 block w-full border border-gray-300 rounded-md shadow-sm p-2 font-mono text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="王小明	0912345678	ming@example.com..."></textarea>
+                        <textarea id="batch-data-textarea" rows="10" required class="mt-2 block w-full border border-gray-300 rounded-md shadow-sm p-2 font-mono text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="王小明	0912345678	...	李大華	A123..."></textarea>
                     </div>
                 </div>
                 <div class="mt-6 flex justify-end space-x-3">
@@ -393,7 +416,29 @@
                         <input type="tel" id="edit-customer-phone" name="customerPhone" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                     </div>
                 </div>
-                 <!-- Additional fields can be added here if needed -->
+
+                <!-- 編輯法定代理人資料 -->
+                <div class="border-t pt-4 mt-4 space-y-4">
+                    <h4 class="text-sm font-semibold text-gray-600">法定代理人資料</h4>
+                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="edit-guardian-name" class="block text-sm font-medium text-gray-700">姓名</label>
+                            <input type="text" id="edit-guardian-name" name="guardianName" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="edit-guardian-id" class="block text-sm font-medium text-gray-700">身分證字號</label>
+                            <input type="text" id="edit-guardian-id" name="guardianIdNumber" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                         <div class="md:col-span-2">
+                            <label for="edit-guardian-address" class="block text-sm font-medium text-gray-700">戶籍地址</label>
+                            <input type="text" id="edit-guardian-address" name="guardianAddress" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="edit-guardian-dob" class="block text-sm font-medium text-gray-700">出生年月日</label>
+                            <input type="date" id="edit-guardian-dob" name="guardianDob" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                    </div>
+                </div>
 
                 <!-- 報名來源 -->
                 <div class="space-y-2 border-t pt-4">
@@ -1022,6 +1067,19 @@
                             </div>`;
                         }
 
+                        let guardianHtml = '';
+                        if (data.guardianName) {
+                            guardianHtml = `
+                            <div class="col-span-1 sm:col-span-2 mt-2 pt-2 border-t border-gray-200">
+                                <h5 class="text-xs font-bold text-gray-500 mb-1">法定代理人資訊</h5>
+                                <p class="text-sm text-gray-500">姓名: <span class="font-medium text-gray-700">${data.guardianName}</span></p>
+                                <p class="text-sm text-gray-500">身分證: <span class="font-medium text-gray-700">${data.guardianIdNumber || 'N/A'}</span></p>
+                                <p class="text-sm text-gray-500">地址: <span class="font-medium text-gray-700">${data.guardianAddress || 'N/A'}</span></p>
+                                <p class="text-sm text-gray-500">生日: <span class="font-medium text-gray-700">${data.guardianDob || 'N/A'}</span></p>
+                            </div>
+                            `;
+                        }
+
                         const itemHtml = `
                             <li class="p-4 bg-gray-50 rounded-lg border border-gray-200 relative">
                                 <button class="edit-registration-btn absolute top-2 right-2 text-xs text-blue-600 hover:underline" data-reg-id="${doc.id}">編輯</button>
@@ -1037,6 +1095,7 @@
                                         <p class="text-sm text-gray-500">職業: <span class="font-medium text-gray-700">${data.customerOccupation || 'N/A'}</span></p>
                                         ${data.customerEmail ? `<p class="text-sm text-gray-500 col-span-1 sm:col-span-2">Email: <span class="font-medium text-gray-700">${data.customerEmail}</span></p>` : ''}
                                         ${customFieldsHtml}
+                                        ${guardianHtml}
                                         ${data.addonTransport ? `<div class="col-span-1 sm:col-span-2 mt-2 pt-2 border-t border-gray-200"><p class="text-sm text-green-600 font-semibold">✓ 已加購交通接送</p></div>` : ''}
                                         ${sourcesHtml}
                                     </div>
@@ -1098,7 +1157,12 @@
             // Populate customer details
             form.elements['customerName'].value = registration.customerName || '';
             form.elements['customerPhone'].value = registration.customerPhone || '';
-            // Note: This form doesn't include all customer fields, just basic ones for order context.
+            
+            // Populate guardian details
+            form.elements['guardianName'].value = registration.guardianName || '';
+            form.elements['guardianIdNumber'].value = registration.guardianIdNumber || '';
+            form.elements['guardianAddress'].value = registration.guardianAddress || '';
+            form.elements['guardianDob'].value = registration.guardianDob || '';
 
             // Populate sources
             const sourceContainer = form.querySelector('#edit-registration-source-container');
@@ -1223,6 +1287,10 @@
                     customerIdNumber: data.customerIdNumber || '',
                     customerDob: data.customerDob || '',
                     customerOccupation: data.customerOccupation || '',
+                    guardianName: data.guardianName || '',
+                    guardianIdNumber: data.guardianIdNumber || '',
+                    guardianAddress: data.guardianAddress || '',
+                    guardianDob: data.guardianDob || '',
                     addonTransport: !!data.addonTransport,
                     customFields: customFields,
                     sources: sources, // 新增來源欄位
@@ -1249,6 +1317,10 @@
                 eventId: form.elements.eventId.value,
                 customerName: form.elements.customerName.value,
                 customerPhone: form.elements.customerPhone.value,
+                guardianName: form.elements.guardianName.value,
+                guardianIdNumber: form.elements.guardianIdNumber.value,
+                guardianAddress: form.elements.guardianAddress.value,
+                guardianDob: form.elements.guardianDob.value,
                 sources: Array.from(form.querySelectorAll('input[name="sources"]:checked')).map(cb => cb.value),
                 customFields: {}
             };
@@ -1474,6 +1546,10 @@
                     '身分證字號': reg.customerIdNumber,
                     '出生年月日': reg.customerDob,
                     '職業': reg.customerOccupation,
+                    '法定代理人姓名': reg.guardianName,
+                    '法定代理人身分證': reg.guardianIdNumber,
+                    '法定代理人戶籍地址': reg.guardianAddress,
+                    '法定代理人生日': reg.guardianDob,
                     '交通接送': reg.addonTransport ? '是' : '否',
                     '報名來源': (reg.sources || []).join(', '),
                     '自訂欄位': JSON.stringify(reg.customFields || {}),
@@ -1513,6 +1589,10 @@
                         '身分證字號': reg.customerIdNumber,
                         '出生年月日': reg.customerDob,
                         '職業': reg.customerOccupation,
+                        '法定代理人姓名': reg.guardianName,
+                        '法定代理人身分證': reg.guardianIdNumber,
+                        '法定代理人戶籍地址': reg.guardianAddress,
+                        '法定代理人生日': reg.guardianDob,
                         '交通接送': reg.addonTransport ? '是' : '否',
                         '報名來源': (reg.sources || []).join(', '),
                         '自訂欄位': JSON.stringify(reg.customFields || {}),
@@ -1548,6 +1628,10 @@
                         '身分證字號': reg.customerIdNumber,
                         '出生年月日': reg.customerDob,
                         '職業': reg.customerOccupation,
+                        '法定代理人姓名': reg.guardianName,
+                        '法定代理人身分證': reg.guardianIdNumber,
+                        '法定代理人戶籍地址': reg.guardianAddress,
+                        '法定代理人生日': reg.guardianDob,
                         '交通接送': reg.addonTransport ? '是' : '否',
                         '報名來源': (reg.sources || []).join(', '),
                         '自訂欄位': JSON.stringify(reg.customFields || {}),
@@ -1767,7 +1851,7 @@
 
                 try {
                     for (const line of lines) {
-                        const [name, phone, email, idNumber, dob, occupation] = line.split('\t');
+                        const [name, phone, email, idNumber, dob, occupation, guardianName, guardianIdNumber, guardianAddress, guardianDob] = line.split('\t');
                         const trimmedPhone = phone ? phone.trim() : '';
 
                         let customerId = null;
@@ -1803,6 +1887,10 @@
                             customerIdNumber: idNumber || '',
                             customerDob: dob || '',
                             customerOccupation: occupation || '',
+                            guardianName: guardianName || '',
+                            guardianIdNumber: guardianIdNumber || '',
+                            guardianAddress: guardianAddress || '',
+                            guardianDob: guardianDob || '',
                             createdAt: new Date(),
                             isCheckedIn: false,
                             addonTransport: false,
@@ -1848,36 +1936,14 @@
             editRegistrationForm.addEventListener('submit', handleEditRegistrationForm);
             deleteRegistrationBtn.addEventListener('click', async () => {
                 const regId = editRegistrationForm.querySelector('#edit-registration-id').value;
-                if (!regId) return;
-
-                const btn = deleteRegistrationBtn;
-                if (btn.dataset.confirm === 'true') {
+                if(regId && confirm('您確定要取消這筆報名嗎？此動作無法復原。')) {
                     try {
                         await deleteDoc(doc(registrationsCollection, regId));
                         editRegistrationModal.classList.add('hidden');
                     } catch (error) {
                         console.error("取消報名失敗:", error);
-                    } finally {
-                        if (btn.timeoutId) clearTimeout(btn.timeoutId);
-                        btn.textContent = '取消此筆報名';
-                        btn.classList.replace('bg-yellow-500', 'bg-red-600');
-                        btn.classList.replace('text-black', 'text-white');
-                        delete btn.dataset.confirm;
+                        alert("取消報名失敗！");
                     }
-                } else {
-                    btn.dataset.confirm = 'true';
-                    btn.textContent = '確認取消？';
-                    btn.classList.replace('bg-red-600', 'bg-yellow-500');
-                    btn.classList.replace('text-white', 'text-black');
-
-                    btn.timeoutId = setTimeout(() => {
-                        if (btn.dataset.confirm === 'true') {
-                           btn.textContent = '取消此筆報名';
-                           btn.classList.replace('bg-yellow-500', 'bg-red-600');
-                           btn.classList.replace('text-black', 'text-white');
-                           delete btn.dataset.confirm;
-                        }
-                    }, 3000);
                 }
             });
 
