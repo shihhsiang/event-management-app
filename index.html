@@ -429,6 +429,22 @@
                         <label for="edit-customer-phone" class="block text-sm font-medium text-gray-700">聯絡電話</label>
                         <input type="tel" id="edit-customer-phone" name="customerPhone" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                     </div>
+                    <div>
+                        <label for="edit-customer-email" class="block text-sm font-medium text-gray-700">電子郵件</label>
+                        <input type="email" id="edit-customer-email" name="customerEmail" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="edit-customer-id" class="block text-sm font-medium text-gray-700">身分證字號</label>
+                        <input type="text" id="edit-customer-id" name="customerIdNumber" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="edit-customer-dob" class="block text-sm font-medium text-gray-700">出生年月日</label>
+                        <input type="date" id="edit-customer-dob" name="customerDob" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="edit-customer-occupation" class="block text-sm font-medium text-gray-700">職業</label>
+                        <input type="text" id="edit-customer-occupation" name="customerOccupation" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
                 </div>
 
                 <!-- 編輯法定代理人資料 -->
@@ -451,6 +467,14 @@
                             <label for="edit-guardian-dob" class="block text-sm font-medium text-gray-700">出生年月日</label>
                             <input type="date" id="edit-guardian-dob" name="guardianDob" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                         </div>
+                    </div>
+                </div>
+                 <div class="flex items-start border-t pt-4">
+                    <div class="flex items-center h-5">
+                        <input id="edit-addon-transport" name="addonTransport" type="checkbox" class="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded">
+                    </div>
+                    <div class="ml-3 text-sm">
+                        <label for="edit-addon-transport" class="font-medium text-gray-700">加購項目：交通接送</label>
                     </div>
                 </div>
 
@@ -1120,7 +1144,11 @@
                     `;
                 }
                 
-                const transportIconHtml = data.addonTransport ? `<span class="text-xs font-semibold bg-blue-100 text-blue-800 px-2 py-1 rounded-full ml-2">需要共乘</span>` : '';
+                 const transportCheckboxHtml = `
+                    <div class="flex items-center space-x-2 text-sm text-blue-600 font-semibold">
+                         <input type="checkbox" id="transport-check-${doc.id}" data-reg-id="${doc.id}" class="transport-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" ${data.addonTransport ? 'checked' : ''}>
+                         <label for="transport-check-${doc.id}">共乘</label>
+                    </div>`;
 
                 const detailsContentHtml = `
                     <p class="text-sm text-gray-500">身分證: <span class="font-medium text-gray-700">${data.customerIdNumber || 'N/A'}</span></p>
@@ -1130,7 +1158,6 @@
                     ${data.customerEmail ? `<p class="text-sm text-gray-500 col-span-1 sm:col-span-2">Email: <span class="font-medium text-gray-700">${data.customerEmail}</span></p>` : ''}
                     ${customFieldsHtml}
                     ${guardianHtml}
-                    ${data.addonTransport ? `<div class="col-span-1 sm:col-span-2 mt-2 pt-2 border-t border-gray-200"><p class="text-sm text-blue-600 font-semibold">✓ 已加購交通接送</p></div>` : ''}
                     ${sourcesHtml}
                 `;
 
@@ -1140,9 +1167,10 @@
                             <summary class="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-100 list-none">
                                 <div class="flex items-center space-x-4">
                                     <input type="checkbox" data-doc-id="${doc.id}" class="check-in-box h-6 w-6 text-blue-600 border-gray-300 rounded focus:ring-blue-500 flex-shrink-0" ${data.isCheckedIn ? 'checked' : ''}>
-                                    <p class="text-lg font-bold text-gray-800 flex items-center">${data.customerName || '未命名'} ${transportIconHtml}</p>
+                                    <p class="text-lg font-bold text-gray-800 flex items-center">${data.customerName || '未命名'}</p>
                                 </div>
                                 <div class="flex items-center space-x-3">
+                                    ${transportCheckboxHtml}
                                     <button class="edit-registration-btn text-xs font-semibold bg-white border border-gray-300 rounded-md px-3 py-1 hover:bg-gray-50" data-reg-id="${doc.id}">編輯</button>
                                     <span class="text-gray-400 text-sm transition-transform transform details-marker">▼</span>
                                 </div>
@@ -1207,6 +1235,11 @@
             // Populate customer details
             form.elements['customerName'].value = registration.customerName || '';
             form.elements['customerPhone'].value = registration.customerPhone || '';
+            form.elements['customerEmail'].value = registration.customerEmail || '';
+            form.elements['customerIdNumber'].value = registration.customerIdNumber || '';
+            form.elements['customerDob'].value = registration.customerDob || '';
+            form.elements['customerOccupation'].value = registration.customerOccupation || '';
+            form.elements['addonTransport'].checked = !!registration.addonTransport;
             
             // Populate guardian details
             form.elements['guardianName'].value = registration.guardianName || '';
@@ -1367,6 +1400,11 @@
                 eventId: form.elements.eventId.value,
                 customerName: form.elements.customerName.value,
                 customerPhone: form.elements.customerPhone.value,
+                customerEmail: form.elements.customerEmail.value,
+                customerIdNumber: form.elements.customerIdNumber.value,
+                customerDob: form.elements.customerDob.value,
+                customerOccupation: form.elements.customerOccupation.value,
+                addonTransport: form.elements.addonTransport.checked,
                 guardianName: form.elements.guardianName.value,
                 guardianIdNumber: form.elements.guardianIdNumber.value,
                 guardianAddress: form.elements.guardianAddress.value,
@@ -2163,6 +2201,16 @@
                         await updateDoc(doc(registrationsCollection, docId), { isCheckedIn: isChecked });
                     } catch (error) {
                         console.error("更新報到狀態失敗:", error);
+                    }
+                }
+                 if (e.target.classList.contains('transport-checkbox')) {
+                    const docId = e.target.dataset.regId;
+                    const isChecked = e.target.checked;
+                    if (!docId) return;
+                    try {
+                        await updateDoc(doc(registrationsCollection, docId), { addonTransport: isChecked });
+                    } catch (error) {
+                        console.error("更新共乘狀態失敗:", error);
                     }
                 }
             });
